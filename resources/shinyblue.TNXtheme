@@ -1,0 +1,557 @@
+/* --- Silverlight风格QSS主题 --- */
+QMainWindow, QWidget {
+    background-color: #F0F0F0;
+    color: #000000;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* --- 按钮样式 --- */
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-width: 2px;
+    border-radius: 2px;
+    color: #FFFFFF;
+    padding: 3px 3px;
+    min-height: 21px;
+}
+
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+}
+
+QPushButton:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #FFFFFF, 
+                stop:0.418 #D1D4D6, 
+                stop:0.425 #A9AFB5, 
+                stop:1 #62676A);
+}
+
+QPushButton:focus {
+    border-image: none;
+    border: 1px solid;
+    border-image: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 #FFFFFF,
+                stop:0.209 #98DAFF,
+                stop:1 rgba(152, 218, 255, 0));
+}
+
+/* --- 选项按钮样式 --- */
+QRadioButton {
+    spacing: 4px;
+    color: #000000;
+}
+
+QRadioButton::indicator {
+    width: 14px;
+    height: 14px;
+}
+
+QRadioButton::indicator:unchecked {
+    image: url(none);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 7px;
+}
+
+QRadioButton::indicator:checked {
+    image: url(none);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 7px;
+}
+
+QRadioButton::indicator:checked {
+    image: url(none);
+}
+
+QRadioButton::indicator:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 6px;
+    height: 6px;
+    background: #FFFFFF;
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #006CD1, 
+                stop:1 #A5D6F9);
+    border-radius: 3px;
+}
+
+QRadioButton:hover {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 #FFFFFF,
+                stop:0.209 #98DAFF,
+                stop:1 rgba(152, 218, 255, 0));
+}
+
+/* --- 复选框样式 --- */
+QCheckBox {
+    spacing: 4px;
+    color: #000000;
+}
+
+QCheckBox::indicator {
+    width: 14px;
+    height: 14px;
+}
+
+QCheckBox::indicator:unchecked {
+    image: url(none);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 1px;
+}
+
+QCheckBox::indicator:checked {
+    image: url(none);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 1px;
+}
+
+QCheckBox::indicator:checked::after {
+    content: '';
+    position: absolute;
+    left: 2.75px;
+    top: 3px;
+    width: 10.5px;
+    height: 10px;
+    background-image: url(none); /* 在实际应用中，这里应该是个钩形图标 */
+    background-color: #FFFFFF;
+}
+
+QCheckBox::indicator:indeterminate {
+    image: url(none);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 1px;
+}
+
+QCheckBox::indicator:indeterminate::after {
+    content: '';
+    position: absolute;
+    left: 3.5px;
+    top: 3.5px;
+    width: 8px;
+    height: 8px;
+    background: #FFFFFF;
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #006CD1, 
+                stop:1 #A5D6F9);
+    border-radius: 1px;
+}
+
+QCheckBox:hover {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 #FFFFFF,
+                stop:0.209 #98DAFF,
+                stop:1 rgba(152, 218, 255, 0));
+}
+
+/* --- 文本框样式 --- */
+QLineEdit, QTextEdit {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #D1D4D6, 
+                stop:0.1 #FFFFFF, 
+                stop:1 #FFFFFF);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 2px;
+    padding: 2px;
+    color: #000000;
+    selection-background-color: #006DD4;
+    selection-color: #FFFFFF;
+}
+
+QLineEdit:focus, QTextEdit:focus {
+    border: 2px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+}
+
+QLineEdit:hover, QTextEdit:hover {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 rgba(247, 247, 247, 0.45), 
+                stop:1 rgba(247, 247, 247, 0));
+}
+
+/* --- 下拉框样式 --- */
+QComboBox {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #D1D4D6, 
+                stop:0.1 #FFFFFF, 
+                stop:1 #FFFFFF);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 3px;
+    padding: 1px 18px 1px 3px;
+    color: #000000;
+}
+
+QComboBox:hover {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 rgba(247, 247, 247, 0.45), 
+                stop:1 rgba(247, 247, 247, 0));
+}
+
+QComboBox:focus {
+    border: 2px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    border: none;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border-radius: 2px;
+}
+
+QComboBox::down-arrow {
+    image: url(none);
+    width: 7px;
+    height: 4px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #FFFFFF, 
+                stop:1 #FFFFFF);
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #737373;
+    selection-background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    selection-color: #FFFFFF;
+    background: #FFFFFF;
+}
+
+/* --- 数字选择框样式 --- */
+QSpinBox, QDoubleSpinBox {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #D1D4D6, 
+                stop:0.1 #FFFFFF, 
+                stop:1 #FFFFFF);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 2px;
+    padding: 2px;
+    color: #000000;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 15px;
+    height: 10px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 2px;
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 15px;
+    height: 10px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 2px;
+}
+
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+    image: url(none);
+    width: 7px;
+    height: 4px;
+    background: #FFFFFF;
+}
+
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    image: url(none);
+    width: 7px;
+    height: 4px;
+    background: #FFFFFF;
+}
+
+/* --- 列表框样式 --- */
+QListWidget {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #D1D4D6, 
+                stop:0.1 #FFFFFF, 
+                stop:1 #FFFFFF);
+    border: 1px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #000000);
+    border-radius: 2px;
+    color: #000000;
+}
+
+QListWidget::item {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #A1A1A1);
+    border: none;
+    padding: 5px;
+}
+
+QListWidget::item:selected {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    color: #FFFFFF;
+}
+
+/* --- 滚动条样式 --- */
+QScrollBar:vertical {
+    background: #DDDDDD;
+    width: 18px;
+    margin: 18px 0 18px 0;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    min-height: 30px;
+    border-radius: 2px;
+    margin: 1px;
+}
+
+QScrollBar::up-button:vertical {
+    border: none;
+    background: #DDDDDD;
+    height: 18px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+    border-radius: 3px;
+}
+
+QScrollBar::down-button:vertical {
+    border: none;
+    background: #DDDDDD;
+    height: 18px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+    border-radius: 3px;
+}
+
+QScrollBar::up-arrow:vertical {
+    width: 7px;
+    height: 4px;
+    background: #FFFFFF;
+}
+
+QScrollBar::down-arrow:vertical {
+    width: 7px;
+    height: 4px;
+    background: #FFFFFF;
+}
+
+QScrollBar:horizontal {
+    background: #DDDDDD;
+    height: 18px;
+    margin: 0 18px 0 18px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:horizontal {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    min-width: 30px;
+    border-radius: 2px;
+    margin: 1px;
+}
+
+QScrollBar::left-button:horizontal {
+    border: none;
+    background: #DDDDDD;
+    width: 18px;
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+    border-radius: 3px;
+}
+
+QScrollBar::right-button:horizontal {
+    border: none;
+    background: #DDDDDD;
+    width: 18px;
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+    border-radius: 3px;
+}
+
+QScrollBar::left-arrow:horizontal {
+    width: 4px;
+    height: 7px;
+    background: #FFFFFF;
+}
+
+QScrollBar::right-arrow:horizontal {
+    width: 4px;
+    height: 7px;
+    background: #FFFFFF;
+}
+
+/* --- 切换按钮样式 --- */
+QToolButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BBBBBB, 
+                stop:0.38 #737373, 
+                stop:0.384 #646464, 
+                stop:1 #A1A1A1);
+    border: 2px solid;
+    border-image: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+    border-radius: 4px;
+    padding: 3px;
+    color: #FFFFFF;
+}
+
+QToolButton:hover {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                stop:0 #FFFFFF,
+                stop:0.209 #98DAFF,
+                stop:1 rgba(152, 218, 255, 0));
+}
+
+QToolButton:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #FFFFFF, 
+                stop:0.418 #D1D4D6, 
+                stop:0.425 #A9AFB5, 
+                stop:1 #62676A);
+}
+
+QToolButton:checked {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #BAE4FF, 
+                stop:0.418 #006DD4, 
+                stop:0.418 #398FDF, 
+                stop:1 #0A3E69);
+}

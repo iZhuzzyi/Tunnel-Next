@@ -21,12 +21,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             /* --- 按钮样式 --- */
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204));
+                                stop:0 rgba(99, 102, 104, 230), 
+                                stop:0.50 rgba(69, 71, 71, 230), 
+                                stop:0.53 rgba(52, 52, 52, 230), 
+                                stop:1 rgba(0, 0, 0, 230));
                 border-top: 1px solid rgba(255, 255, 255, 77);
                 border-bottom: 1px solid rgba(0, 0, 0, 102);
                 border-left: 1px solid rgba(0, 0, 0, 70);
@@ -39,12 +37,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(115, 118, 120, 230), 
+                                stop:0.50 rgba(85, 87, 87, 230), 
+                                stop:0.53 rgba(68, 68, 68, 230), 
+                                stop:1 rgba(15, 15, 15, 230)); 
                 border-top: 1px solid rgba(255, 255, 255, 100);
                 border-bottom: 1px solid rgba(0, 0, 0, 130); 
                 color: #FFFFFF;
@@ -65,12 +61,8 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QPushButton:disabled {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204));
+                                stop:0 rgba(60, 60, 60, 150), 
+                                stop:1 rgba(40, 40, 40, 150));
                 border: 1px solid #333333;
                 color: #666666;
             }
@@ -97,12 +89,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             /* --- 框架样式 --- */
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(80, 83, 85, 230), 
+                                stop:0.50 rgba(55, 57, 57, 230), 
+                                stop:0.53 rgba(40, 40, 40, 230), 
+                                stop:1 rgba(10, 10, 10, 230)); 
                 border: none;
                 border-radius: 5px; 
             }
@@ -123,12 +113,9 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QScrollBar::handle:vertical {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                            stop:0 rgba(119, 119, 119, 204),
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(140, 140, 140, 200),
+                            stop:0.5 rgba(180, 180, 180, 230), 
+                            stop:1 rgba(140, 140, 140, 200));
                 min-height: 30px;
                 border-radius: 6px;
                 border: 1px solid rgba(255, 255, 255, 80); 
@@ -150,12 +137,9 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QScrollBar::handle:horizontal {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                            stop:0 rgba(119, 119, 119, 204),
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(140, 140, 140, 200),
+                            stop:0.5 rgba(180, 180, 180, 230), 
+                            stop:1 rgba(140, 140, 140, 200));
                 min-width: 30px;
                 border-radius: 6px;
                 border: 1px solid rgba(255, 255, 255, 80);
@@ -185,12 +169,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             /* --- 菜单样式 --- */
             QMenu {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(80, 83, 85, 240), 
+                                stop:0.50 rgba(55, 57, 57, 245), 
+                                stop:0.53 rgba(40, 40, 40, 250), 
+                                stop:1 rgba(10, 10, 10, 255)); 
                 border: 1px solid rgba(100, 100, 100, 150);
                 border-radius: 5px;
                 color: #E8E8E8;
@@ -217,12 +199,8 @@ QMainWindow::centralWidget, QWidget#central_widget {
             /* --- 分割器样式 --- */
             QSplitter::handle {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(80, 83, 85, 230), 
+                                stop:1 rgba(40, 40, 40, 230)); 
             }
             QSplitter::handle:horizontal {
                 width: 5px;
@@ -234,12 +212,8 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QSplitter::handle:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(115, 118, 120, 230), 
+                                stop:1 rgba(68, 68, 68, 230)); 
             }
 
             /* --- 特定区域样式 --- */
@@ -254,12 +228,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             QFrame#node_settings_area > QScrollArea > QWidget > QWidget > QFrame,
             QFrame#node_settings_area_frame > QScrollArea > QWidget > QWidget > QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204)); 
+                                stop:0 rgba(70, 73, 75, 230), 
+                                stop:0.50 rgba(45, 47, 47, 230), 
+                                stop:0.53 rgba(30, 30, 30, 230), 
+                                stop:1 rgba(5, 5, 5, 230)); 
                 border: none;
                 margin: 2px 0;
             }
@@ -341,12 +313,7 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             QTabBar::tab {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204));
+                                stop:0 #353535, stop:1 #252525);
                 border: 1px solid #404040;
                 border-bottom-color: #404040;
                 border-top-left-radius: 4px;
@@ -403,12 +370,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             #ribbonWidget QWidget[objectName="view_tab"],
             #ribbonWidget QWidget[objectName="node_tab"] {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(80, 83, 85, 230), 
+                            stop:0.50 rgba(55, 57, 57, 230), 
+                            stop:0.53 rgba(40, 40, 40, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
             }
 
 
@@ -418,12 +383,7 @@ QMainWindow::centralWidget, QWidget#central_widget {
             }
             #ribbonWidget QTabBar::tab {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 rgba(119, 119, 119, 204), 
-                                stop:0.1 rgba(97, 97, 97, 204), 
-                                stop:0.5 rgba(35, 35, 35, 204), 
-                                stop:0.51 rgba(0, 0, 0, 204), 
-                                stop:0.6 rgba(0, 0, 0, 204), 
-                                stop:1 rgba(32, 32, 32, 204));
+                                stop:0 #353535, stop:1 #252525);
                 border: 1px solid #404040;
                 border-bottom-color: #404040;
                 border-top-left-radius: 4px;
@@ -461,12 +421,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             
             QToolBar QToolButton:hover {
                 background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                    stop:0 rgba(119, 119, 119, 204), 
-                                    stop:0.1 rgba(97, 97, 97, 204), 
-                                    stop:0.5 rgba(35, 35, 35, 204), 
-                                    stop:0.51 rgba(0, 0, 0, 204), 
-                                    stop:0.6 rgba(0, 0, 0, 204), 
-                                    stop:1 rgba(32, 32, 32, 204));
+                                    stop:0 rgba(100, 103, 105, 230), 
+                                    stop:0.50 rgba(75, 77, 77, 230), 
+                                    stop:0.53 rgba(60, 60, 60, 230), 
+                                    stop:1 rgba(30, 30, 30, 230));
                 border: 1px solid #777777;
             }
             
@@ -484,12 +442,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
             /* 状态栏样式 */
             QStatusBar, #preview_status_bar {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                            stop:0 rgba(119, 119, 119, 204), 
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(55, 58, 60, 230), 
+                            stop:0.50 rgba(35, 37, 37, 230), 
+                            stop:0.53 rgba(28, 28, 28, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
                 border-top: 1px solid rgba(80, 80, 80, 130);
             }
 
@@ -511,12 +467,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
 
             #film_preview_list::item {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                            stop:0 rgba(119, 119, 119, 204), 
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(70, 73, 75, 230), 
+                            stop:0.50 rgba(45, 47, 47, 230), 
+                            stop:0.53 rgba(35, 35, 35, 230), 
+                            stop:1 rgba(20, 20, 20, 230));
                 border: 1px solid #505050;
                 border-radius: 4px;
                 color: #E0E0E0;
@@ -526,12 +480,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
 
             #film_preview_list::item:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                            stop:0 rgba(119, 119, 119, 204), 
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(85, 88, 90, 230), 
+                            stop:0.50 rgba(60, 62, 62, 230), 
+                            stop:0.53 rgba(50, 50, 50, 230), 
+                            stop:1 rgba(35, 35, 35, 230));
                 border: 1px solid #606060;
             }
 
@@ -554,12 +506,10 @@ QMainWindow::centralWidget, QWidget#central_widget {
 
             #info_header {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                            stop:0 rgba(119, 119, 119, 204), 
-                            stop:0.1 rgba(97, 97, 97, 204), 
-                            stop:0.5 rgba(35, 35, 35, 204), 
-                            stop:0.51 rgba(0, 0, 0, 204), 
-                            stop:0.6 rgba(0, 0, 0, 204), 
-                            stop:1 rgba(32, 32, 32, 204));
+                            stop:0 rgba(80, 83, 85, 230), 
+                            stop:0.50 rgba(55, 57, 57, 230), 
+                            stop:0.53 rgba(40, 40, 40, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
                 border-bottom: 1px solid #404040;
                 border-radius: 4px 4px 0px 0px;
             }
@@ -572,4 +522,4 @@ QMainWindow::centralWidget, QWidget#central_widget {
             #info_panel QLabel {
                 color: #E0E0E0;
                 background-color: transparent;
-            }
+                            }    
