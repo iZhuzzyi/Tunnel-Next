@@ -1,0 +1,522 @@
+/* --- 基本元素样式 --- */
+            QMainWindow, QWidget {
+                background-color: #1F1F1F; /* 整体更深的背景 */
+                color: #E8E8E8; 
+                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            }
+/* 中央部件背景 - 紫红色到黑色渐变，压缩到顶部5.6% */
+QMainWindow::centralWidget, QWidget#central_widget {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(185, 50, 140, 230), 
+                    stop:0.028 rgba(110, 40, 120, 230), 
+                    stop:0.039 rgba(90, 30, 100, 230), 
+                    stop:0.056 rgba(70, 20, 80, 230),
+                    stop:0.0561 rgba(25, 25, 25, 230),
+                    stop:1 rgba(185, 50, 140, 230));
+    border: 1px solid #A040C0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+}
+            /* --- 按钮样式 --- */
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(99, 102, 104, 230), 
+                                stop:0.50 rgba(69, 71, 71, 230), 
+                                stop:0.53 rgba(52, 52, 52, 230), 
+                                stop:1 rgba(0, 0, 0, 230));
+                border-top: 1px solid rgba(255, 255, 255, 77);
+                border-bottom: 1px solid rgba(0, 0, 0, 102);
+                border-left: 1px solid rgba(0, 0, 0, 70);
+                border-right: 1px solid rgba(0, 0, 0, 70);
+                border-radius: 5px; 
+                color: #F0F0F0;
+                padding: 5px 12px;
+                min-height: 24px; 
+                outline: none;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(115, 118, 120, 230), 
+                                stop:0.50 rgba(85, 87, 87, 230), 
+                                stop:0.53 rgba(68, 68, 68, 230), 
+                                stop:1 rgba(15, 15, 15, 230)); 
+                border-top: 1px solid rgba(255, 255, 255, 100);
+                border-bottom: 1px solid rgba(0, 0, 0, 130); 
+                color: #FFFFFF;
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(130, 50, 140, 230), 
+                                stop:0.50 rgba(110, 40, 120, 230), 
+                                stop:0.53 rgba(90, 30, 100, 230), 
+                                stop:1 rgba(70, 20, 80, 230)); 
+                border-top: 1px solid rgba(40, 0, 40, 100);
+                border-bottom: 1px solid rgba(255, 150, 255, 70);
+                border-left: 1px solid rgba(40, 0, 40, 70);
+                border-right: 1px solid rgba(40, 0, 40, 70);
+                padding-top: 6px;
+                padding-bottom: 4px;
+                color: #FFFFFF;
+            }
+            QPushButton:disabled {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(60, 60, 60, 150), 
+                                stop:1 rgba(40, 40, 40, 150));
+                border: 1px solid #333333;
+                color: #666666;
+            }
+
+            /* --- 标签样式 --- */
+            QLabel {
+                color: #E8E8E8;
+                background-color: transparent;
+            }
+            QLabel[styleClass="title"] {
+                font-weight: bold;
+                font-size: 11pt;
+            }
+            QLabel[styleClass="subtitle"] {
+                font-weight: bold;
+            }
+            QLabel[styleClass="highlight"] {
+                font-weight: bold; 
+                color: #B050C0; 
+                font-size: 12pt; 
+                background-color: transparent;
+            }
+
+            /* --- 框架样式 --- */
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(80, 83, 85, 230), 
+                                stop:0.50 rgba(55, 57, 57, 230), 
+                                stop:0.53 rgba(40, 40, 40, 230), 
+                                stop:1 rgba(10, 10, 10, 230)); 
+                border: none;
+                border-radius: 5px; 
+            }
+
+            /* --- 滚动区域样式 --- */
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+            
+            /* --- 滚动条样式 --- */
+            QScrollBar:vertical {
+                background: rgba(20, 20, 20, 180); 
+                width: 14px; 
+                margin: 18px 0 18px 0;
+                border: 1px solid #303030;
+                border-radius: 7px;
+            }
+            QScrollBar::handle:vertical {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                            stop:0 rgba(140, 140, 140, 200),
+                            stop:0.5 rgba(180, 180, 180, 230), 
+                            stop:1 rgba(140, 140, 140, 200));
+                min-height: 30px;
+                border-radius: 6px;
+                border: 1px solid rgba(255, 255, 255, 80); 
+                margin: 1px; 
+            }
+            QScrollBar::handle:vertical:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                            stop:0 rgba(200, 80, 210, 210),
+                            stop:0.5 rgba(230, 100, 240, 240), 
+                            stop:1 rgba(200, 80, 210, 210));
+                border: 1px solid rgba(255, 180, 255, 150);
+            }
+            QScrollBar:horizontal { 
+                background: rgba(20, 20, 20, 180);
+                height: 14px;
+                margin: 0 18px 0 18px;
+                border: 1px solid #303030;
+                border-radius: 7px;
+            }
+            QScrollBar::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(140, 140, 140, 200),
+                            stop:0.5 rgba(180, 180, 180, 230), 
+                            stop:1 rgba(140, 140, 140, 200));
+                min-width: 30px;
+                border-radius: 6px;
+                border: 1px solid rgba(255, 255, 255, 80);
+                margin: 1px;
+            }
+            QScrollBar::handle:horizontal:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(200, 80, 210, 210),
+                            stop:0.5 rgba(230, 100, 240, 240), 
+                            stop:1 rgba(200, 80, 210, 210));
+                border: 1px solid rgba(255, 180, 255, 150);
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                background: none;
+                border: none;
+            }
+            QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
+            QScrollBar::left-arrow:horizontal, QScrollBar::right-arrow:horizontal {
+                background: none;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: none;
+            }
+
+            /* --- 菜单样式 --- */
+            QMenu {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(80, 83, 85, 240), 
+                                stop:0.50 rgba(55, 57, 57, 245), 
+                                stop:0.53 rgba(40, 40, 40, 250), 
+                                stop:1 rgba(10, 10, 10, 255)); 
+                border: 1px solid rgba(100, 100, 100, 150);
+                border-radius: 5px;
+                color: #E8E8E8;
+                padding: 5px;
+            }
+            QMenu::item {
+                padding: 7px 30px 7px 30px; 
+                border-radius: 4px;
+                background-color: transparent;
+            }
+            QMenu::item:selected {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(180, 70, 190, 160), 
+                                stop:1 rgba(140, 50, 150, 220));
+                color: #FFFFFF;
+                border: 1px solid rgba(255, 180, 255, 100);
+            }
+            QMenu::separator {
+                height: 1px;
+                background-color: rgba(255, 255, 255, 40);
+                margin: 5px 8px;
+            }
+
+            /* --- 分割器样式 --- */
+            QSplitter::handle {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(80, 83, 85, 230), 
+                                stop:1 rgba(40, 40, 40, 230)); 
+            }
+            QSplitter::handle:horizontal {
+                width: 5px;
+                border: none;
+            }
+            QSplitter::handle:vertical {
+                height: 5px;
+                border: none;
+            }
+            QSplitter::handle:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(115, 118, 120, 230), 
+                                stop:1 rgba(68, 68, 68, 230)); 
+            }
+
+            /* --- 特定区域样式 --- */
+            QFrame#preview_area, QFrame#node_graph_area, QFrame#node_settings_area,
+            QFrame#preview_area_frame, QFrame#node_graph_area_frame, QFrame#node_settings_area_frame {
+                background-color: #1C1C1C;
+                border: none;
+                border-radius: 4px;
+            }
+            
+            /* --- 节点设置区域样式 --- */
+            QFrame#node_settings_area > QScrollArea > QWidget > QWidget > QFrame,
+            QFrame#node_settings_area_frame > QScrollArea > QWidget > QWidget > QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 rgba(70, 73, 75, 230), 
+                                stop:0.50 rgba(45, 47, 47, 230), 
+                                stop:0.53 rgba(30, 30, 30, 230), 
+                                stop:1 rgba(5, 5, 5, 230)); 
+                border: none;
+                margin: 2px 0;
+            }
+            
+            /* --- 状态栏样式 --- */
+            QFrame#previewStatusBar {
+                background-color: #2A2A2A;
+                border-top: 1px solid #404040;
+                border-bottom: none;
+                border-left: none;
+                border-right: none;
+                border-radius: 0;
+            }
+            QFrame#previewStatusBar QLabel {
+                color: #D0D0D0;
+                font-size: 9pt;
+                padding: 0 3px;
+                background-color: transparent;
+            }
+            
+            /* --- 工具栏样式 --- */
+            QToolBar {
+                background-color: transparent;
+                border: none;
+                spacing: 5px;
+                padding: 5px;
+            }
+            QToolButton {
+                background-color: rgba(40, 40, 40, 120);
+                border: 1px solid #404040;
+                padding: 5px;
+                border-radius: 5px;
+                color: #E0E0E0;
+            }
+            QToolButton:hover {
+                background-color: rgba(80, 80, 80, 150);
+                border: 1px solid #8030A0;
+            }
+            QToolButton:pressed {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #8030A0, stop:1 #6020A0);
+                border: 1px solid #A040C0;
+                color: #FFFFFF;
+            }
+            QToolButton:checked {
+                background-color: rgba(128, 48, 160, 150);
+                border: 1px solid #A040C0;
+                color: #FFFFFF;
+            }
+            
+            /* --- 胶片预览列表样式 --- */
+            QListWidget {
+                background-color: #3a3a3a;
+                border: none;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 5px;
+                color: #e0e0e0;
+                background-color: #4a4a4a;
+                border-radius: 3px;
+                text-align: center;
+            }
+            QListWidget::item:selected {
+                background-color: #5a7aa5;
+                border: 1px solid #78aee8;
+            }
+            QListWidget::item:hover {
+                background-color: #555555;
+            }
+            
+            /* --- TabWidget 样式 --- */
+            QTabWidget::pane {
+                border-top: 1px solid #404040;
+                background-color: #202020;
+            }
+            QTabWidget::tab-bar {
+                alignment: left;
+            }
+            QTabBar::tab {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #353535, stop:1 #252525);
+                border: 1px solid #404040;
+                border-bottom-color: #404040;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 8ex;
+                padding: 5px 15px;
+                margin-right: 2px;
+                color: #E0E0E0;
+            }
+            QTabBar::tab:selected, QTabBar::tab:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #8030A0, stop:1 #6020A0);
+                color: #FFFFFF;
+            }
+            QTabBar::tab:selected {
+                border-color: #A040C0;
+                border-bottom-color: #202020;
+            }
+            QTabBar::tab:!selected {
+                margin-top: 2px;
+            }
+            
+            /* --- 性能模式工具栏样式 --- */
+            QToolBar[styleClass="performance_enabled"] {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #8030A0, stop:1 #6020A0);
+                border: 1px solid #A040C0;
+                border-radius: 3px;
+            }
+            QToolBar[styleClass="performance_enabled"] QToolButton {
+                background-color: transparent;
+                color: #FFFFFF;
+            }
+            
+            /* --- 预览滚动区域样式 --- */
+            #preview_scroll {
+                background-color: #222222;
+            }
+            /* --- QTabWidget (Ribbon菜单) 额外样式 --- */
+            /* --- QTabWidget (Ribbon菜单) 额外样式 --- */
+            /* 保持原有的ribbonWidget基础样式 */
+#ribbonWidget {
+    background: transparent;
+    border-bottom: 1px solid #404040;
+}
+
+/* 新增：标签栏背景透明 */
+#ribbonWidget QTabBar {
+    background: transparent;
+}
+
+                        /* 为所有标签页内容区域（不包括标签栏）设置渐变背景 */            #ribbonWidget > QStackedWidget > QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(80, 83, 85, 230), 
+                            stop:0.50 rgba(55, 57, 57, 230), 
+                            stop:0.53 rgba(40, 40, 40, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
+            }
+
+
+            /* 确保里面的工具栏本身是透明的，显示下层渐变 */
+            #ribbonWidget QToolBar {
+                background-color: transparent;
+            }
+            #ribbonWidget QTabBar::tab {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #353535, stop:1 #252525);
+                border: 1px solid #404040;
+                border-bottom-color: #404040;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 8ex;
+                padding: 5px 15px;
+                margin-right: 2px;
+                color: #E0E0E0;
+            }
+            
+            #ribbonWidget QTabBar::tab:selected, #ribbonWidget QTabBar::tab:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #8030A0, stop:1 #6020A0);
+                color: #FFFFFF;
+            }
+            
+            #ribbonWidget QTabBar::tab:selected {
+                border-color: #A040C0;
+                border-bottom-color: #202020;
+            }
+            
+            /* --- QToolBar (文件/视图/节点工具栏) 额外样式 --- */
+            QToolBar {
+                background-color: transparent;
+                border: none;
+                spacing: 3px;
+            }
+            QToolBar QToolButton {
+                background-color: transparent;
+                color: #E8E8E8;
+                border: none;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            
+            QToolBar QToolButton:hover {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                    stop:0 rgba(100, 103, 105, 230), 
+                                    stop:0.50 rgba(75, 77, 77, 230), 
+                                    stop:0.53 rgba(60, 60, 60, 230), 
+                                    stop:1 rgba(30, 30, 30, 230));
+                border: 1px solid #777777;
+            }
+            
+            QToolBar QToolButton:pressed {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                    stop:0 rgba(130, 50, 140, 230), 
+                                    stop:0.50 rgba(110, 40, 120, 230), 
+                                    stop:0.53 rgba(90, 30, 100, 230), 
+                                    stop:1 rgba(70, 20, 80, 230));
+                border: 1px solid #A040C0;
+                padding-top: 6px;
+                padding-bottom: 4px;
+            }
+            
+            /* 状态栏样式 */
+            QStatusBar, #preview_status_bar {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(55, 58, 60, 230), 
+                            stop:0.50 rgba(35, 37, 37, 230), 
+                            stop:0.53 rgba(28, 28, 28, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
+                border-top: 1px solid rgba(80, 80, 80, 130);
+            }
+
+            /* 状态栏标签样式 */
+            #pixel_info_label, #image_size_label {
+                color: #E8E8E8;
+                background-color: transparent;
+                font-size: 9pt;
+                padding: 2px 6px;
+            }
+
+            /* 胶片预览窗格样式 - 与主界面风格一致 */
+            #film_preview_list {
+                background-color: #1C1C1C;  /* 与主要区域背景一致 */
+                border: 1px solid #404040;
+                border-radius: 5px;
+                padding: 5px;
+            }
+
+            #film_preview_list::item {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(70, 73, 75, 230), 
+                            stop:0.50 rgba(45, 47, 47, 230), 
+                            stop:0.53 rgba(35, 35, 35, 230), 
+                            stop:1 rgba(20, 20, 20, 230));
+                border: 1px solid #505050;
+                border-radius: 4px;
+                color: #E0E0E0;
+                padding: 3px;
+                margin: 2px;
+            }
+
+            #film_preview_list::item:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(85, 88, 90, 230), 
+                            stop:0.50 rgba(60, 62, 62, 230), 
+                            stop:0.53 rgba(50, 50, 50, 230), 
+                            stop:1 rgba(35, 35, 35, 230));
+                border: 1px solid #606060;
+            }
+
+            #film_preview_list::item:selected {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(130, 50, 140, 230), 
+                            stop:0.50 rgba(110, 40, 120, 230), 
+                            stop:0.53 rgba(90, 30, 100, 230), 
+                            stop:1 rgba(70, 20, 80, 230));
+                border: 1px solid #A040C0;
+                color: #FFFFFF;
+            }
+
+            /* 信息面板样式 */
+            #info_panel {
+                background-color: #1C1C1C;  /* 与主要区域背景一致 */
+                border: 1px solid #404040;
+                border-radius: 5px;
+            }
+
+            #info_header {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 rgba(80, 83, 85, 230), 
+                            stop:0.50 rgba(55, 57, 57, 230), 
+                            stop:0.53 rgba(40, 40, 40, 230), 
+                            stop:1 rgba(10, 10, 10, 230));
+                border-bottom: 1px solid #404040;
+                border-radius: 4px 4px 0px 0px;
+            }
+
+            #info_panel QLabel[styleClass="subtitle"] {
+                font-weight: bold;
+                color: #FFFFFF;
+            }
+
+            #info_panel QLabel {
+                color: #E0E0E0;
+                background-color: transparent;
+                            }    
