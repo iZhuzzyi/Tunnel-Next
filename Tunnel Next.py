@@ -262,6 +262,9 @@ class TunnelNX(QMainWindow):
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.node_cache = LRUCache(max_size=200)
 
+        # 启用缓存调试统计（可以通过配置文件控制）
+        self._debug_cache_stats = True  # 设置为True以查看缓存统计信息
+
         # 初始化元数据管理器
         self.metadata_manager = MetadataManager()
 
@@ -4797,6 +4800,11 @@ class TunnelNX(QMainWindow):
         # 设置节点图为已修改状态
         self.set_nodegraph_state(modified=True)
 
+        # 使输入节点及其下游节点的缓存失效（因为输入发生了变化）
+        input_node_id = input_node.get('id')
+        if input_node_id is not None:
+            self.invalidate_downstream_cache(input_node_id, "新建连接")
+
         # --- 新增：处理灵活端口 ---
         # 检查并处理输出节点的灵活端口
         self._handle_flexible_port(output_node, output_port, 'outputs')
@@ -5298,6 +5306,11 @@ class TunnelNX(QMainWindow):
             if 'processed_outputs' in node:
                 del node['processed_outputs']
 
+            # 使该节点及其下游节点的缓存失效
+            node_id = node.get('id')
+            if node_id is not None:
+                self.invalidate_downstream_cache(node_id, f"参数 '{param_name}' 更新")
+
             # 检查此节点是否是预览节点的上游节点
             is_preview_relevant = False
             preview_node = None
@@ -5335,6 +5348,20 @@ class TunnelNX(QMainWindow):
         for conn in self.connections:
             if conn['input_node'] == target_node or conn['output_node'] == target_node:
                 conn_to_remove.append(conn)
+
+        # 使受影响的节点缓存失效
+        target_node_id = target_node.get('id')
+        if target_node_id is not None:
+            # 使被删除节点的缓存失效
+            self.invalidate_node_cache(target_node_id, "节点被删除")
+
+            # 使所有连接到被删除节点的下游节点缓存失效
+            for conn in conn_to_remove:
+                if conn['output_node'] == target_node:
+                    # 被删除节点是输出节点，使输入节点及其下游失效
+                    input_node_id = conn['input_node'].get('id')
+                    if input_node_id is not None:
+                        self.invalidate_downstream_cache(input_node_id, "上游节点被删除")
 
         for conn in conn_to_remove:
             self.connections.remove(conn)
@@ -5651,6 +5678,10 @@ class TunnelNX(QMainWindow):
         # 更新色彩空间和伽马指示器
         self.update_colorspace_gamma_indicators()
 
+        # 显示缓存统计信息（如果启用了调试且有节点被处理）
+        if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats and processed_count > 0:
+            self.print_cache_stats()
+
         # 注: 此处原来的自动保存代码已移除
 
 
@@ -5795,7 +5826,7 @@ class TunnelNX(QMainWindow):
 
     def _get_node_cache_key(self, node):
         """
-        为节点生成唯一的缓存键，考虑节点ID、输入节点、参数值
+        为节点生成唯一的缓存键，考虑节点ID、输入数据哈希、参数值
 
         参数:
             node: 要处理的节点
@@ -5816,18 +5847,25 @@ class TunnelNX(QMainWindow):
                                 if isinstance(info, dict))
             key_parts.append(f"params:{params_str}")
 
-        # 添加输入节点信息 - 仅包含输入节点ID和输出端口索引，不再包含输入端口索引
-        # 因为重要的是输入数据来源，而不是如何连接到当前节点
+        # 添加输入连接信息 - 使用连接信息而不是实际数据哈希以避免递归
         input_connections = []
         for conn in self.connections:
             if conn['input_node'] == node:
-                # 查找上游节点的输出结果的哈希值 - 更稳定的缓存键方式
                 output_node = conn['output_node']
                 output_port = conn['output_port']
                 input_port = conn['input_port']
 
-                # 更稳定的连接表示方式，仅关注输入数据的来源
-                conn_repr = f"{output_node.get('id', 'unknown')}:{output_port}->{input_port}"
+                # 包含上游节点的缓存键信息，但不递归计算
+                upstream_key_part = f"{output_node.get('id', 'unknown')}:{output_node.get('script_path', 'unknown')}"
+
+                # 如果上游节点有参数，也包含参数信息
+                if 'params' in output_node and isinstance(output_node['params'], dict):
+                    upstream_params = "|".join(f"{param}={info.get('value')}"
+                                            for param, info in sorted(output_node['params'].items())
+                                            if isinstance(info, dict))
+                    upstream_key_part += f":{upstream_params}"
+
+                conn_repr = f"{upstream_key_part}:{output_port}->{input_port}"
                 input_connections.append(conn_repr)
 
         if input_connections:
@@ -5843,31 +5881,49 @@ class TunnelNX(QMainWindow):
             print(f"警告: process_node接收到的'node'不是字典: {type(node)}")
             return {}
 
-        # 如果节点已处理，直接返回结果
+        # 如果节点已处理，直接返回结果（但要确保结果不为空）
         if 'processed_outputs' in node:
             # 确保返回的是一个字典，即使之前存储的是None或其他类型
             outputs = node['processed_outputs']
-            return outputs if isinstance(outputs, dict) else {}
+            if isinstance(outputs, dict) and outputs:  # 确保输出不为空
+                return outputs
+            else:
+                # 如果输出为空或无效，清除processed_outputs以重新处理
+                if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+                    print(f"节点 '{node.get('title', '未知')}' 的processed_outputs为空，重新处理")
+                del node['processed_outputs']
 
         # 计算缓存键
         cache_key = self._get_node_cache_key(node)
+        node_title = node.get('title', '未知')
+        node_id = node.get('id', '未知ID')
+
+        # 调试：打印缓存键信息
+        if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+            print(f"节点 '{node_title}' ({node_id}) 缓存键: {cache_key[:100]}...")
 
         # 尝试从缓存中获取结果
         cached_result = self.node_cache.get(cache_key)
         if cached_result is not None:
             # 有缓存结果，记录缓存命中并直接使用
-            node_title = node.get('title', '未知')
-            node_id = node.get('id', '未知ID')
             node_type = node.get('script_info', {}).get('node_type', '未知类型')
 
             # 为了调试目的，只打印某些类型节点的缓存命中日志
             is_debug_node = node_type in ['decode', 'input', 'filter', 'transform']
-            if is_debug_node:
+            if is_debug_node or (hasattr(self, '_debug_cache_stats') and self._debug_cache_stats):
                 print(f"缓存命中：节点 '{node_title}' ({node_id}) - 类型: {node_type}")
 
+            # 深拷贝缓存结果以避免修改原始缓存数据
+            import copy
+            cached_result_copy = copy.deepcopy(cached_result)
+
             # 保存到节点缓存，避免再次计算
-            node['processed_outputs'] = cached_result
-            return cached_result
+            node['processed_outputs'] = cached_result_copy
+            return cached_result_copy
+        else:
+            # 调试：打印缓存未命中信息
+            if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+                print(f"缓存未命中：节点 '{node_title}' ({node_id})")
 
         # 初始化输出
         outputs = {}
@@ -6163,6 +6219,30 @@ class TunnelNX(QMainWindow):
         # 保存处理结果到节点
         node['processed_outputs'] = enhanced_outputs
 
+        # 将处理结果存储到LRU缓存中（只有当输出有效时才存储）
+        try:
+            # 检查输出是否有效（不为空且包含实际数据）
+            has_valid_output = False
+            for key, value in enhanced_outputs.items():
+                if key != '_metadata' and value is not None:
+                    has_valid_output = True
+                    break
+
+            if has_valid_output:
+                # 深拷贝输出数据以避免缓存数据被后续处理修改
+                import copy
+                enhanced_outputs_copy = copy.deepcopy(enhanced_outputs)
+                self.node_cache.put(cache_key, enhanced_outputs_copy)
+                # 可选：打印缓存统计信息（仅在调试时）
+                if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+                    stats = self.node_cache.get_stats()
+                    print(f"缓存存储：节点 '{node_title}' ({node_id}) - 输出类型: {list(enhanced_outputs.keys())} - 缓存大小: {stats['current_size']}/{stats['max_size']}")
+            else:
+                if hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+                    print(f"跳过缓存存储：节点 '{node_title}' ({node_id}) - 输出为空或无效")
+        except Exception as e:
+            print(f"存储节点缓存时出错: {e}")
+
         # 如果有支持自定义预览更新的函数，则触发它
         # 例如让节点自己处理预览窗口的更新，而不是由主程序统一更新
         node_id = node.get('id')
@@ -6329,6 +6409,91 @@ class TunnelNX(QMainWindow):
             inputs['_metadata'] = accumulated_metadata
 
         return inputs
+
+    def invalidate_node_cache(self, node_id, reason="未知"):
+        """
+        使指定节点的所有缓存失效
+
+        参数:
+            node_id: 节点ID
+            reason: 失效原因（用于调试）
+        """
+        if not hasattr(self, 'node_cache'):
+            return
+
+        # 查找并移除所有包含该节点ID的缓存项
+        keys_to_remove = []
+        for cache_key in self.node_cache.cache.keys():
+            if f"id:{node_id}" in cache_key:
+                keys_to_remove.append(cache_key)
+
+        removed_count = 0
+        for key in keys_to_remove:
+            if key in self.node_cache.cache:
+                del self.node_cache.cache[key]
+                removed_count += 1
+
+        if removed_count > 0 and hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+            print(f"缓存失效：节点 {node_id} - 原因: {reason} - 移除了 {removed_count} 个缓存项")
+
+    def invalidate_downstream_cache(self, node_id, reason="上游节点变化"):
+        """
+        使指定节点及其所有下游节点的缓存失效
+
+        参数:
+            node_id: 起始节点ID
+            reason: 失效原因
+        """
+        if not hasattr(self, 'node_cache'):
+            return
+
+        # 找到所有下游节点
+        downstream_nodes = set()
+        self._find_downstream_nodes(node_id, downstream_nodes)
+
+        # 使当前节点和所有下游节点的缓存失效
+        all_affected_nodes = {node_id} | downstream_nodes
+        total_removed = 0
+
+        for affected_node_id in all_affected_nodes:
+            keys_to_remove = []
+            for cache_key in self.node_cache.cache.keys():
+                if f"id:{affected_node_id}" in cache_key:
+                    keys_to_remove.append(cache_key)
+
+            for key in keys_to_remove:
+                if key in self.node_cache.cache:
+                    del self.node_cache.cache[key]
+                    total_removed += 1
+
+        if total_removed > 0 and hasattr(self, '_debug_cache_stats') and self._debug_cache_stats:
+            print(f"下游缓存失效：起始节点 {node_id} - 原因: {reason} - 影响节点: {len(all_affected_nodes)} - 移除缓存项: {total_removed}")
+
+    def _find_downstream_nodes(self, node_id, downstream_nodes):
+        """递归查找下游节点"""
+        for conn in self.connections:
+            if conn['output_node'].get('id') == node_id:
+                downstream_id = conn['input_node'].get('id')
+                if downstream_id not in downstream_nodes:
+                    downstream_nodes.add(downstream_id)
+                    # 递归查找更下游的节点
+                    self._find_downstream_nodes(downstream_id, downstream_nodes)
+
+    def print_cache_stats(self):
+        """打印LRU缓存统计信息到命令行"""
+        if hasattr(self, 'node_cache'):
+            stats = self.node_cache.get_stats()
+            print("\n=== LRU缓存统计信息 ===")
+            print(f"缓存命中次数: {stats['hits']}")
+            print(f"缓存未命中次数: {stats['misses']}")
+            print(f"总请求次数: {stats['total_requests']}")
+            print(f"缓存命中率: {stats['hit_rate']:.2%}")
+            print(f"当前缓存大小: {stats['current_size']}")
+            print(f"最大缓存大小: {stats['max_size']}")
+            print(f"缓存使用率: {stats['current_size']/stats['max_size']:.1%}")
+            print("========================\n")
+        else:
+            print("LRU缓存未初始化")
 
     def execute_sub_operation(self, node, operation):
         """执行节点子操作"""
@@ -8128,6 +8293,22 @@ class TunnelNX(QMainWindow):
 
         # 设置节点图为已修改状态
         self.set_nodegraph_state(modified=True)
+
+        # 使受影响节点的缓存失效
+        node_id = node.get('id')
+        if node_id is not None:
+            if port_type == 'input':
+                # 断开输入端口，使当前节点及其下游节点的缓存失效
+                self.invalidate_downstream_cache(node_id, "断开输入连接")
+            else:  # port_type == 'output'
+                # 断开输出端口，使当前节点的缓存失效
+                self.invalidate_node_cache(node_id, "断开输出连接")
+                # 同时使所有曾经连接到这个输出的节点及其下游节点的缓存失效
+                for conn in conn_to_remove:
+                    if conn['output_node'] == node and conn['output_port'] == port_idx:
+                        affected_input_node_id = conn['input_node'].get('id')
+                        if affected_input_node_id is not None:
+                            self.invalidate_downstream_cache(affected_input_node_id, "上游连接断开")
 
         # 处理灵活端口 - 检查这是否是最后一个添加的灵活端口
         port_count_key = port_type + 's'  # 'input' -> 'inputs', 'output' -> 'outputs'
