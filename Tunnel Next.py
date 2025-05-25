@@ -70,36 +70,82 @@ class MetadataManager:
         return copy.deepcopy(metadata)
 
     def add_node_to_path(self, metadata, node_id, node_title):
-        """向元数据的节点路径中添加节点"""
+        """向元数据的节点路径中添加节点（优化版本）
+
+        优化点：
+        1. 只保存节点ID和标题，不保存处理时间
+        2. 避免重复添加相同的节点
+        3. 限制路径长度，防止无限增长
+        """
         if not isinstance(metadata, dict):
             metadata = {}
 
         if 'node_path' not in metadata:
             metadata['node_path'] = []
 
-        metadata['node_path'].append({
+        # 检查节点是否已经在路径中（避免重复）
+        for existing_node in metadata['node_path']:
+            if (isinstance(existing_node, dict) and
+                existing_node.get('node_id') == node_id):
+                # 节点已存在，不重复添加
+                return metadata
+            elif existing_node == node_id:
+                # 兼容旧格式（直接存储node_id）
+                return metadata
+
+        # 添加新节点（只保存ID和标题）
+        node_info = {
             'node_id': node_id,
-            'node_title': node_title,
-            'processed_at': datetime.datetime.now().isoformat()
-        })
+            'node_title': node_title
+        }
+
+        metadata['node_path'].append(node_info)
+
+        # 限制路径长度，防止无限增长（保留最近的50个节点）
+        max_path_length = 50
+        if len(metadata['node_path']) > max_path_length:
+            metadata['node_path'] = metadata['node_path'][-max_path_length:]
+
         return metadata
 
     def add_processing_record(self, metadata, operation, details=None):
-        """向元数据中添加处理记录"""
+        """向元数据中添加处理记录（优化版本）
+
+        优化点：
+        1. 不保存时间戳，减少元数据大小
+        2. 限制历史记录数量，防止无限增长
+        3. 简化记录格式
+        """
         if not isinstance(metadata, dict):
             metadata = {}
 
         if 'processing_history' not in metadata:
             metadata['processing_history'] = []
 
+        # 简化的记录格式（不包含时间戳）
         record = {
-            'operation': operation,
-            'timestamp': datetime.datetime.now().isoformat()
+            'operation': operation
         }
-        if details:
-            record['details'] = details
+
+        # 只保存重要的详情信息
+        if details and isinstance(details, dict):
+            # 只保存脚本类型和输出类型，忽略脚本路径等冗余信息
+            simplified_details = {}
+            if 'script_type' in details:
+                simplified_details['script_type'] = details['script_type']
+            if 'output_types' in details and details['output_types']:
+                simplified_details['output_types'] = details['output_types']
+
+            if simplified_details:
+                record['details'] = simplified_details
 
         metadata['processing_history'].append(record)
+
+        # 限制历史记录数量，防止无限增长（保留最近的20条记录）
+        max_history_length = 20
+        if len(metadata['processing_history']) > max_history_length:
+            metadata['processing_history'] = metadata['processing_history'][-max_history_length:]
+
         return metadata
 
     def get_metadata_value(self, metadata, key, default=None):
@@ -3903,8 +3949,9 @@ class TunnelNX(QMainWindow):
 
     def show_node_metadata_dialog(self, node):
         """显示节点元数据查看对话框"""
-        from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTextEdit,
-                                       QPushButton, QLabel, QDialogButtonBox, QApplication)
+        from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
+                                       QPushButton, QLabel, QDialogButtonBox, QApplication, QSplitter,
+                                       QTextEdit, QGroupBox, QGridLayout, QScrollArea, QWidget, QFrame)
         from PySide6.QtCore import Qt
         import json
         import datetime
@@ -3913,15 +3960,25 @@ class TunnelNX(QMainWindow):
         dialog = QDialog(self)
         dialog.setWindowTitle(f"元数据查看 - {node.get('title', '未知节点')} (ID: {node.get('id', 'N/A')})")
         dialog.setModal(True)
-        dialog.resize(600, 500)
+        dialog.resize(800, 600)
 
         # 主布局
-        layout = QVBoxLayout(dialog)
+        main_layout = QVBoxLayout(dialog)
 
-        # 标题标签
+        # 标题区域
+        title_frame = QFrame()
+        title_layout = QVBoxLayout(title_frame)
+        title_layout.setContentsMargins(10, 10, 10, 10)
+
         title_label = QLabel(f"节点: {node.get('title', '未知节点')}")
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
-        layout.addWidget(title_label)
+        title_label.setProperty("class", "metadata-title")
+        title_layout.addWidget(title_label)
+
+        subtitle_label = QLabel(f"ID: {node.get('id', 'N/A')} | 脚本: {node.get('script_path', '未知')}")
+        subtitle_label.setProperty("class", "metadata-subtitle")
+        title_layout.addWidget(subtitle_label)
+
+        main_layout.addWidget(title_frame)
 
         # 获取节点元数据
         node_metadata = node.get('metadata', {})
@@ -3934,22 +3991,64 @@ class TunnelNX(QMainWindow):
         # 合并元数据（输出元数据优先）
         combined_metadata = self.metadata_manager.merge_metadata(node_metadata, output_metadata)
 
-        # 格式化元数据文本
-        metadata_text = self._format_metadata_for_display(combined_metadata)
+        # 创建分割器
+        splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(splitter)
 
-        # 文本显示区域
-        text_edit = QTextEdit()
-        text_edit.setPlainText(metadata_text)
-        text_edit.setReadOnly(True)
-        text_edit.setFont(QApplication.font())  # 使用系统默认字体
-        layout.addWidget(text_edit)
+        # 左侧：元数据树形视图
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        tree_label = QLabel("元数据结构")
+        tree_label.setProperty("class", "section-title")
+        left_layout.addWidget(tree_label)
+
+        metadata_tree = QTreeWidget()
+        metadata_tree.setHeaderLabels(["键", "值", "类型"])
+        metadata_tree.setAlternatingRowColors(True)
+        self._populate_metadata_tree(metadata_tree, combined_metadata)
+        left_layout.addWidget(metadata_tree)
+
+        splitter.addWidget(left_widget)
+
+        # 右侧：详细信息面板
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        details_label = QLabel("详细信息")
+        details_label.setProperty("class", "section-title")
+        right_layout.addWidget(details_label)
+
+        # 创建滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        details_widget = QWidget()
+        details_layout = QVBoxLayout(details_widget)
+
+        # 添加各个信息组
+        self._add_basic_info_group(details_layout, combined_metadata)
+        self._add_node_path_group(details_layout, combined_metadata)
+        self._add_processing_history_group(details_layout, combined_metadata)
+        self._add_custom_metadata_group(details_layout, combined_metadata)
+
+        details_layout.addStretch()
+        scroll_area.setWidget(details_widget)
+        right_layout.addWidget(scroll_area)
+
+        splitter.addWidget(right_widget)
+        splitter.setSizes([400, 400])  # 设置初始比例
 
         # 按钮区域
         button_layout = QHBoxLayout()
 
         # 复制到剪贴板按钮
         copy_button = QPushButton("复制到剪贴板")
-        copy_button.clicked.connect(lambda: self._copy_metadata_to_clipboard(metadata_text))
+        copy_button.clicked.connect(lambda: self._copy_metadata_to_clipboard_gui(combined_metadata))
         button_layout.addWidget(copy_button)
 
         # 导出到文件按钮
@@ -3958,15 +4057,342 @@ class TunnelNX(QMainWindow):
         button_layout.addWidget(export_button)
 
         button_layout.addStretch()
-        layout.addLayout(button_layout)
+        main_layout.addLayout(button_layout)
 
         # 对话框按钮
         button_box = QDialogButtonBox(QDialogButtonBox.Close)
         button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
+        main_layout.addWidget(button_box)
 
         # 显示对话框
         dialog.exec_()
+
+    def _populate_metadata_tree(self, tree_widget, metadata, parent_item=None):
+        """填充元数据树形视图"""
+        from PySide6.QtWidgets import QTreeWidgetItem
+
+        if not isinstance(metadata, dict):
+            return
+
+        for key, value in metadata.items():
+            if parent_item is None:
+                item = QTreeWidgetItem(tree_widget)
+            else:
+                item = QTreeWidgetItem(parent_item)
+
+            item.setText(0, str(key))
+
+            if isinstance(value, dict):
+                item.setText(1, f"({len(value)} 项)")
+                item.setText(2, "字典")
+                self._populate_metadata_tree(tree_widget, value, item)
+            elif isinstance(value, list):
+                item.setText(1, f"({len(value)} 项)")
+                item.setText(2, "列表")
+                for i, list_item in enumerate(value):
+                    child_item = QTreeWidgetItem(item)
+                    child_item.setText(0, f"[{i}]")
+                    if isinstance(list_item, (dict, list)):
+                        child_item.setText(1, f"({len(list_item)} 项)")
+                        child_item.setText(2, type(list_item).__name__)
+                        if isinstance(list_item, dict):
+                            self._populate_metadata_tree(tree_widget, list_item, child_item)
+                    else:
+                        child_item.setText(1, str(list_item))
+                        child_item.setText(2, type(list_item).__name__)
+            else:
+                item.setText(1, str(value))
+                item.setText(2, type(value).__name__)
+
+        tree_widget.expandAll()
+
+    def _add_basic_info_group(self, layout, metadata):
+        """添加基本信息组"""
+        from PySide6.QtWidgets import QGroupBox, QGridLayout, QLabel
+
+        group = QGroupBox("基本信息")
+        grid_layout = QGridLayout(group)
+
+        row = 0
+        if 'created_at' in metadata:
+            grid_layout.addWidget(QLabel("创建时间:"), row, 0)
+            grid_layout.addWidget(QLabel(str(metadata['created_at'])), row, 1)
+            row += 1
+
+        if 'node_id' in metadata:
+            grid_layout.addWidget(QLabel("节点ID:"), row, 0)
+            grid_layout.addWidget(QLabel(str(metadata['node_id'])), row, 1)
+            row += 1
+
+        if 'node_title' in metadata:
+            grid_layout.addWidget(QLabel("节点标题:"), row, 0)
+            grid_layout.addWidget(QLabel(str(metadata['node_title'])), row, 1)
+            row += 1
+
+        if 'script_path' in metadata:
+            grid_layout.addWidget(QLabel("脚本路径:"), row, 0)
+            path_label = QLabel(str(metadata['script_path']))
+            path_label.setWordWrap(True)
+            grid_layout.addWidget(path_label, row, 1)
+            row += 1
+
+        if row > 0:
+            layout.addWidget(group)
+
+    def _add_node_path_group(self, layout, metadata):
+        """添加节点路径组"""
+        from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QFrame
+
+        if 'node_path' not in metadata or not metadata['node_path']:
+            return
+
+        group = QGroupBox(f"节点处理路径 ({len(metadata['node_path'])} 个节点)")
+        group_layout = QVBoxLayout(group)
+
+        for i, path_item in enumerate(metadata['node_path'], 1):
+            item_frame = QFrame()
+            item_layout = QVBoxLayout(item_frame)
+            item_layout.setContentsMargins(5, 5, 5, 5)
+
+            if isinstance(path_item, dict):
+                title = f"{i}. {path_item.get('node_title', '未知')} (ID: {path_item.get('node_id', 'N/A')})"
+                # 优化后的格式不再包含处理时间
+            else:
+                # 兼容旧格式或简单格式
+                title = f"{i}. {path_item}"
+
+            title_label = QLabel(title)
+            title_label.setProperty("class", "path-item-title")
+            item_layout.addWidget(title_label)
+
+            group_layout.addWidget(item_frame)
+
+        layout.addWidget(group)
+
+    def _add_processing_history_group(self, layout, metadata):
+        """添加处理历史组"""
+        from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QFrame
+
+        if 'processing_history' not in metadata or not metadata['processing_history']:
+            return
+
+        group = QGroupBox(f"处理历史 ({len(metadata['processing_history'])} 条记录)")
+        group_layout = QVBoxLayout(group)
+
+        for i, record in enumerate(metadata['processing_history'], 1):
+            record_frame = QFrame()
+            record_layout = QVBoxLayout(record_frame)
+            record_layout.setContentsMargins(5, 5, 5, 5)
+
+            if isinstance(record, dict):
+                operation = record.get('operation', '未知操作')
+                title = f"{i}. {operation}"
+                # 优化后的格式不再包含时间戳
+            else:
+                title = f"{i}. {record}"
+
+            title_label = QLabel(title)
+            title_label.setProperty("class", "history-item-title")
+            record_layout.addWidget(title_label)
+
+            # 显示简化的详情信息
+            if isinstance(record, dict) and 'details' in record:
+                details = record['details']
+                if isinstance(details, dict):
+                    for key, value in details.items():
+                        if key == 'output_types' and isinstance(value, list):
+                            # 格式化输出类型列表
+                            value_text = ', '.join(value) if value else '无输出'
+                            detail_label = QLabel(f"  输出类型: {value_text}")
+                        else:
+                            detail_label = QLabel(f"  {key}: {value}")
+                        detail_label.setProperty("class", "history-item-detail")
+                        record_layout.addWidget(detail_label)
+                else:
+                    detail_label = QLabel(f"  详情: {details}")
+                    detail_label.setProperty("class", "history-item-detail")
+                    record_layout.addWidget(detail_label)
+
+            group_layout.addWidget(record_frame)
+
+        layout.addWidget(group)
+
+    def _add_custom_metadata_group(self, layout, metadata):
+        """添加自定义元数据组"""
+        from PySide6.QtWidgets import QGroupBox, QGridLayout, QLabel
+
+        system_keys = {'created_at', 'node_path', 'processing_history', 'node_id', 'node_title', 'script_path'}
+        custom_metadata = {k: v for k, v in metadata.items() if k not in system_keys}
+
+        if not custom_metadata:
+            return
+
+        group = QGroupBox(f"自定义元数据 ({len(custom_metadata)} 项)")
+        grid_layout = QGridLayout(group)
+
+        row = 0
+        for key, value in custom_metadata.items():
+            grid_layout.addWidget(QLabel(f"{key}:"), row, 0)
+
+            if isinstance(value, (dict, list)):
+                value_text = f"{type(value).__name__} (长度: {len(value)})"
+            else:
+                value_text = str(value)
+
+            value_label = QLabel(value_text)
+            value_label.setWordWrap(True)
+            grid_layout.addWidget(value_label, row, 1)
+            row += 1
+
+        layout.addWidget(group)
+
+    def _copy_metadata_to_clipboard_gui(self, metadata):
+        """复制元数据到剪贴板（GUI版本）"""
+        from PySide6.QtWidgets import QApplication, QMessageBox
+        import json
+
+        try:
+            # 格式化为JSON
+            formatted_json = json.dumps(metadata, ensure_ascii=False, indent=2)
+
+            clipboard = QApplication.clipboard()
+            clipboard.setText(formatted_json)
+
+            QMessageBox.information(self, "复制成功", "元数据已复制到剪贴板（JSON格式）")
+        except Exception as e:
+            QMessageBox.critical(self, "复制失败", f"复制元数据时出错:\n{str(e)}")
+
+    def _format_metadata_for_display(self, metadata):
+        """格式化元数据为易读的文本格式"""
+        if not metadata:
+            return "无元数据信息"
+
+        lines = []
+        lines.append("=" * 60)
+        lines.append("节点元数据信息")
+        lines.append("=" * 60)
+        lines.append("")
+
+        # 基本信息
+        if 'created_at' in metadata:
+            lines.append(f"创建时间: {metadata['created_at']}")
+        if 'node_id' in metadata:
+            lines.append(f"节点ID: {metadata['node_id']}")
+        if 'node_title' in metadata:
+            lines.append(f"节点标题: {metadata['node_title']}")
+        if 'script_path' in metadata:
+            lines.append(f"脚本路径: {metadata['script_path']}")
+        lines.append("")
+
+        # 节点路径
+        if 'node_path' in metadata and metadata['node_path']:
+            lines.append("节点处理路径:")
+            lines.append("-" * 40)
+            for i, path_item in enumerate(metadata['node_path'], 1):
+                if isinstance(path_item, dict):
+                    node_title = path_item.get('node_title', '未知')
+                    node_id = path_item.get('node_id', 'N/A')
+                    processed_at = path_item.get('processed_at', '未知时间')
+                    lines.append(f"  {i}. {node_title} (ID: {node_id}) - {processed_at}")
+                else:
+                    lines.append(f"  {i}. {path_item}")
+            lines.append("")
+
+        # 处理历史
+        if 'processing_history' in metadata and metadata['processing_history']:
+            lines.append("处理历史:")
+            lines.append("-" * 40)
+            for i, record in enumerate(metadata['processing_history'], 1):
+                if isinstance(record, dict):
+                    operation = record.get('operation', '未知操作')
+                    timestamp = record.get('timestamp', '未知时间')
+                    lines.append(f"  {i}. {operation} - {timestamp}")
+                    if 'details' in record:
+                        details = record['details']
+                        if isinstance(details, dict):
+                            for key, value in details.items():
+                                lines.append(f"     {key}: {value}")
+                        else:
+                            lines.append(f"     详情: {details}")
+                else:
+                    lines.append(f"  {i}. {record}")
+            lines.append("")
+
+        # 其他自定义元数据
+        system_keys = {'created_at', 'node_path', 'processing_history', 'node_id', 'node_title', 'script_path'}
+        custom_metadata = {k: v for k, v in metadata.items() if k not in system_keys}
+
+        if custom_metadata:
+            lines.append("自定义元数据:")
+            lines.append("-" * 40)
+            for key, value in custom_metadata.items():
+                if isinstance(value, (dict, list)):
+                    lines.append(f"  {key}: {type(value).__name__} (长度: {len(value)})")
+                    # 如果是小的字典或列表，显示内容
+                    if len(value) <= 5:
+                        import json
+                        try:
+                            formatted_value = json.dumps(value, ensure_ascii=False, indent=4)
+                            for line in formatted_value.split('\n'):
+                                lines.append(f"    {line}")
+                        except:
+                            lines.append(f"    {value}")
+                else:
+                    lines.append(f"  {key}: {value}")
+            lines.append("")
+
+        lines.append("=" * 60)
+        lines.append(f"总计 {len(metadata)} 个元数据键")
+        lines.append("=" * 60)
+
+        return '\n'.join(lines)
+
+    def _copy_metadata_to_clipboard(self, metadata_text):
+        """复制元数据文本到剪贴板"""
+        from PySide6.QtWidgets import QApplication
+        clipboard = QApplication.clipboard()
+        clipboard.setText(metadata_text)
+
+        # 显示提示消息
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.information(self, "复制成功", "元数据已复制到剪贴板")
+
+    def _export_metadata_to_file(self, metadata, node):
+        """导出元数据到文件"""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        import json
+        import os
+
+        # 生成默认文件名
+        node_title = node.get('title', '未知节点').replace('/', '_').replace('\\', '_')
+        node_id = node.get('id', 'unknown')
+        default_filename = f"metadata_{node_title}_ID{node_id}.json"
+
+        # 选择保存位置
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出元数据",
+            default_filename,
+            "JSON文件 (*.json);;文本文件 (*.txt);;所有文件 (*.*)"
+        )
+
+        if file_path:
+            try:
+                # 根据文件扩展名选择格式
+                if file_path.lower().endswith('.json'):
+                    # 保存为JSON格式
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        json.dump(metadata, f, ensure_ascii=False, indent=2)
+                else:
+                    # 保存为文本格式
+                    formatted_text = self._format_metadata_for_display(metadata)
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(formatted_text)
+
+                QMessageBox.information(self, "导出成功", f"元数据已导出到:\n{file_path}")
+
+            except Exception as e:
+                QMessageBox.critical(self, "导出失败", f"导出元数据时出错:\n{str(e)}")
 
     def stop_connection_drag(self):
         """辅助函数：清理连接拖拽状态、过滤器和鼠标抓取"""
