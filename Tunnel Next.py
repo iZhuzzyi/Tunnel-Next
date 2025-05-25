@@ -3114,9 +3114,10 @@ class TunnelNX(QMainWindow):
         if len(self.nodes) == 1:
             self.select_node(node)
 
-        # 处理节点图
-        # 只处理新添加的节点，而不是所有节点
-        self.process_node_graph(changed_nodes=[node])
+        # 新添加的节点通常没有连接，不需要立即处理
+        # 这避免了不必要的预览刷新，提高性能
+        # 只有当节点有连接时才会在后续的连接创建过程中被处理
+        print(f"已添加节点 '{node['title']}'，等待连接后再处理")
         # 注: 此处原自动保存代码已移除
 
         return node
