@@ -453,3 +453,69 @@ class TNXVC:
         except Exception as e:
             print(f"创建新版本失败: {e}")
             return False
+
+    def _update_version_record(self, version_number, nodegraph_data):
+        """更新指定版本的记录
+
+        Args:
+            version_number: 版本号
+            nodegraph_data: 节点图数据
+
+        Returns:
+            bool: 成功返回True，失败返回False
+        """
+        if not self.current_tree or not self.tree_metadata:
+            print("没有活动的版本树或元数据")
+            return False
+
+        try:
+            # 查找对应版本
+            for version_info in self.tree_metadata["versions"]:
+                if version_info["version"] == version_number:
+                    # 更新版本快照文件
+                    snapshot_file = version_info["snapshot_file"]
+                    snapshot_path = os.path.join(self.tnxvc_folder, snapshot_file)
+
+                    with open(snapshot_path, "w", encoding="utf-8") as f:
+                        json.dump(nodegraph_data, f, ensure_ascii=False, indent=2)
+
+                    # 更新版本信息
+                    version_info["timestamp"] = time.time()
+                    version_info["description"] = f"更新于 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+                    print(f"已更新版本 v{version_number} 的记录")
+                    self.save_tree_metadata()
+                    return True
+
+            print(f"未找到版本 v{version_number}")
+            return False
+
+        except Exception as e:
+            print(f"更新版本记录失败: {e}")
+            return False
+
+    def save_tree_metadata(self):
+        """保存版本树元数据到文件（简化版本）
+
+        Returns:
+            bool: 成功返回True，失败返回False
+        """
+        if not self.current_tree or not self.tree_metadata:
+            print("没有活动的版本树或元数据")
+            return False
+
+        try:
+            tree_file = os.path.join(self.tnxvc_folder, f"{self.current_tree}.tnxvc")
+
+            # 更新当前版本号
+            self.tree_metadata["current_version"] = self.current_version
+
+            with open(tree_file, "w", encoding="utf-8") as f:
+                json.dump(self.tree_metadata, f, ensure_ascii=False, indent=2)
+
+            print(f"已保存版本树元数据: {self.current_tree}")
+            return True
+
+        except Exception as e:
+            print(f"保存版本树元数据失败: {e}")
+            return False
