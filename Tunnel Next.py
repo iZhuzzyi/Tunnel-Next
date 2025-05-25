@@ -623,10 +623,95 @@ class TunnelNX(QMainWindow):
                     if act.isCheckable(): # 确保是主题action而不是分隔符等
                         act.setChecked(act.data() == new_theme_file)
 
-                QMessageBox.information(self, "主题已更改", f"已选择主题: {new_theme_file}\n请重新启动应用程序以应用更改。")
+                # 立即应用新主题
+                if self.apply_theme_immediately(new_theme_file):
+                    # 显示简短的成功提示
+                    if hasattr(self, 'task_label'):
+                        self.task_label.setText(f"已切换到主题: {new_theme_file.replace('.TNXtheme', '')}")
+                    print(f"主题已实时切换到: {new_theme_file}")
+                else:
+                    QMessageBox.warning(self, "主题切换失败", f"无法加载主题: {new_theme_file}\n已恢复到默认主题。")
             except Exception as e:
                 QMessageBox.warning(self, "错误", f"无法保存主题配置: {e}")
                 print(f"保存主题配置失败: {e}")
+
+    def apply_theme_immediately(self, theme_file):
+        """立即应用指定的主题文件，实现实时主题切换"""
+        try:
+            # 构建主题文件路径
+            theme_path = os.path.join(self.script_dir, "resources", theme_file)
+
+            # 检查主题文件是否存在
+            if not os.path.exists(theme_path):
+                print(f"主题文件不存在: {theme_path}")
+                return False
+
+            # 读取主题文件内容
+            with open(theme_path, "r", encoding="utf-8") as f:
+                stylesheet = f.read()
+
+            # 应用新的样式表
+            self.setStyleSheet(stylesheet)
+
+            # 强制刷新所有子控件的样式
+            self.refresh_widget_styles()
+
+            print(f"成功应用主题: {theme_file}")
+            return True
+
+        except FileNotFoundError:
+            print(f"主题文件 {theme_path} 未找到")
+            # 加载默认后备样式
+            self.load_fallback_theme()
+            return False
+        except Exception as e:
+            print(f"应用主题 {theme_path} 失败: {e}")
+            # 加载默认后备样式
+            self.load_fallback_theme()
+            return False
+
+    def refresh_widget_styles(self):
+        """刷新所有子控件的样式，确保新主题立即生效"""
+        try:
+            # 刷新主窗口样式
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+            # 递归刷新所有子控件
+            self.refresh_child_widgets(self)
+
+            # 强制重绘
+            self.update()
+
+        except Exception as e:
+            print(f"刷新控件样式时出错: {e}")
+
+    def refresh_child_widgets(self, widget):
+        """递归刷新指定控件及其所有子控件的样式"""
+        try:
+            # 刷新当前控件
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+
+            # 递归处理所有子控件
+            for child in widget.findChildren(QWidget):
+                child.style().unpolish(child)
+                child.style().polish(child)
+
+        except Exception as e:
+            print(f"刷新子控件样式时出错: {e}")
+
+    def load_fallback_theme(self):
+        """加载默认后备主题样式"""
+        fallback_style = """
+            QMainWindow, QWidget {
+                background-color: #1F1F1F;
+                color: #E8E8E8;
+                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            }
+        """
+        self.setStyleSheet(fallback_style)
+        self.refresh_widget_styles()
 
     def open_themes_folder(self):
         resources_path = os.path.join(self.script_dir, "resources")
