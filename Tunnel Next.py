@@ -30,29 +30,11 @@ import importlib.util
 import datetime
 import copy
 import threading
-import multiprocessing
-import queue
-import json
-import pickle
-import socket
-import struct
 # 动态导入TNXVC模块
 try:
     from TunnelNX_scripts.TNXVC import TNXVC
 except ImportError:
     print("TNXVC模块未找到，版本控制功能可能不可用")
-
-# 导入多进程通信模块
-try:
-    from process_communication import (
-        ProcessCommunicator, QueueCommunicator, MessageType, Message, create_process_queues
-    )
-    from nodegraph_parser_process import NodeGraphParserProcess
-    from nodegraph_engine_process import NodeGraphEngineProcess
-    MULTIPROCESS_AVAILABLE = True
-except ImportError as e:
-    print(f"多进程模块导入失败: {e}")
-    MULTIPROCESS_AVAILABLE = False
 
 
 class MetadataManager:
@@ -237,16 +219,6 @@ class TunnelNX(QMainWindow):
         # 初始化元数据管理器
         self.metadata_manager = MetadataManager()
 
-        # 多进程架构支持
-        self.multiprocess_enabled = False
-        self.parser_process = None
-        self.engine_process = None
-        self.communicator = None
-        self.process_queues = None
-
-        # 初始化多进程架构
-        self._init_multiprocess_architecture()
-
         # 首先，确保 self.script_dir 已定义
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -381,220 +353,25 @@ class TunnelNX(QMainWindow):
         self.scripts_folder = "TunnelNX_scripts"
         os.makedirs(self.scripts_folder, exist_ok=True)
 
-        print("__INIT__: About to call setup_main_layout.")
         self.setup_main_layout() # 这会间接调用 create_paned_areas
-        print(f"__INIT__ (After setup_main_layout): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
 
         self.setup_aero_style(theme_name=current_theme_file)
-        print(f"__INIT__ (After setup_aero_style): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
 
         self.script_registry = {}
         self.scan_scripts()
-        print(f"__INIT__ (After scan_scripts): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
 
         self.create_context_menus()
-        print(f"__INIT__ (After create_context_menus): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
 
         self.init_zoom_functionality()
-        print(f"__INIT__ (After init_zoom_functionality): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
-
 
         # 注: 原自动保存定时器和参数调整延迟保存计时器已移除
 
         self.node_preview_windows = {} # 存储 node_id: QDialog 实例
         self.last_context_menu_time = 0
-        print(f"__INIT__ (End of init): self.film_preview_list ID={id(self.film_preview_list)}, Parent={self.film_preview_list.parentWidget()}")
 
-    def _init_multiprocess_architecture(self):
-        """初始化多进程架构"""
-        if not MULTIPROCESS_AVAILABLE:
-            print("多进程模块不可用，使用单进程模式")
-            return
 
-        try:
-            print("正在初始化多进程架构...")
 
-            # 创建进程间通信队列
-            self.process_queues = create_process_queues()
-
-            # 创建GUI进程通信器
-            gui_queues = self.process_queues['gui']
-            self.communicator = QueueCommunicator(
-                'gui',
-                gui_queues['input'],
-                gui_queues['outputs']
-            )
-
-            # 注册消息处理器
-            self.communicator.register_handler(MessageType.PARSE_RESULT, self._handle_parse_result)
-            self.communicator.register_handler(MessageType.PARSE_ERROR, self._handle_parse_error)
-            self.communicator.register_handler(MessageType.EXECUTE_RESULT, self._handle_execute_result)
-            self.communicator.register_handler(MessageType.EXECUTE_ERROR, self._handle_execute_error)
-            self.communicator.register_handler(MessageType.EXECUTE_PROGRESS, self._handle_execute_progress)
-
-            # 启动通信器
-            self.communicator.start()
-
-            # 启动解析器进程
-            self._start_parser_process()
-
-            # 启动引擎进程
-            self._start_engine_process()
-
-            self.multiprocess_enabled = True
-            print("多进程架构初始化成功")
-
-        except Exception as e:
-            print(f"多进程架构初始化失败: {e}")
-            self.multiprocess_enabled = False
-
-    def _start_parser_process(self):
-        """启动节点图解析器进程"""
-        try:
-            parser_queues = self.process_queues['parser']
-            parser_communicator = QueueCommunicator(
-                'parser',
-                parser_queues['input'],
-                parser_queues['outputs']
-            )
-
-            self.parser_process = multiprocessing.Process(
-                target=self._run_parser_process,
-                args=(self.scripts_folder, parser_communicator),
-                daemon=True
-            )
-            self.parser_process.start()
-            print(f"解析器进程已启动，PID: {self.parser_process.pid}")
-
-        except Exception as e:
-            print(f"启动解析器进程失败: {e}")
-            raise
-
-    def _start_engine_process(self):
-        """启动节点图运行引擎进程"""
-        try:
-            engine_queues = self.process_queues['engine']
-            engine_communicator = QueueCommunicator(
-                'engine',
-                engine_queues['input'],
-                engine_queues['outputs']
-            )
-
-            self.engine_process = multiprocessing.Process(
-                target=self._run_engine_process,
-                args=(self.scripts_folder, engine_communicator),
-                daemon=True
-            )
-            self.engine_process.start()
-            print(f"引擎进程已启动，PID: {self.engine_process.pid}")
-
-        except Exception as e:
-            print(f"启动引擎进程失败: {e}")
-            raise
-
-    @staticmethod
-    def _run_parser_process(scripts_folder, communicator):
-        """运行解析器进程的静态方法"""
-        try:
-            parser_process = NodeGraphParserProcess(scripts_folder, communicator)
-            parser_process.run()
-        except Exception as e:
-            print(f"解析器进程运行错误: {e}")
-
-    @staticmethod
-    def _run_engine_process(scripts_folder, communicator):
-        """运行引擎进程的静态方法"""
-        try:
-            engine_process = NodeGraphEngineProcess(scripts_folder, communicator)
-            engine_process.run()
-        except Exception as e:
-            print(f"引擎进程运行错误: {e}")
-
-    def _handle_parse_result(self, data):
-        """处理解析结果"""
-        print("收到节点图解析结果")
-        # 这里可以更新GUI状态
-        return {'status': 'received'}
-
-    def _handle_parse_error(self, data):
-        """处理解析错误"""
-        print(f"节点图解析错误: {data}")
-        return {'status': 'received'}
-
-    def _handle_execute_result(self, data):
-        """处理执行结果"""
-        print("收到节点图执行结果")
-        # 这里可以更新预览等
-        return {'status': 'received'}
-
-    def _handle_execute_error(self, data):
-        """处理执行错误"""
-        print(f"节点图执行错误: {data}")
-        return {'status': 'received'}
-
-    def _handle_execute_progress(self, data):
-        """处理执行进度"""
-        progress = data.get('progress', 0)
-        current_node = data.get('current_node', '')
-        completed_nodes = data.get('completed_nodes', 0)
-        total_nodes = data.get('total_nodes', 0)
-
-        # 更新状态栏
-        if hasattr(self, 'task_label'):
-            self.task_label.setText(f"🔄 处理节点: {current_node} ({completed_nodes}/{total_nodes}) - {progress:.1f}%")
-
-        print(f"执行进度: {progress:.1f}% - 当前节点: {current_node}")
-        return {'status': 'received'}
-
-    def shutdown_multiprocess(self):
-        """关闭多进程架构"""
-        if not self.multiprocess_enabled:
-            return
-
-        try:
-            print("正在关闭多进程架构...")
-
-            # 发送关闭信号
-            if self.communicator:
-                shutdown_msg = Message(MessageType.SHUTDOWN)
-                self.communicator.send_message('parser', shutdown_msg)
-                self.communicator.send_message('engine', shutdown_msg)
-
-                # 停止通信器
-                self.communicator.stop()
-
-            # 等待进程结束
-            if self.parser_process and self.parser_process.is_alive():
-                self.parser_process.join(timeout=5.0)
-                if self.parser_process.is_alive():
-                    self.parser_process.terminate()
-
-            if self.engine_process and self.engine_process.is_alive():
-                self.engine_process.join(timeout=5.0)
-                if self.engine_process.is_alive():
-                    self.engine_process.terminate()
-
-            print("多进程架构已关闭")
-
-        except Exception as e:
-            print(f"关闭多进程架构时出错: {e}")
-
-    def get_application_context(self):
-        """获取应用程序上下文信息"""
-        return {
-            'current_image_path': getattr(self, 'current_image_path', None),
-            'scripts_folder': getattr(self, 'scripts_folder', 'TunnelNX_scripts'),
-            'app_version': getattr(self, 'version', 'Alpha 2'),
-            'zoom_level': getattr(self.preview_display_widget, 'zoom_level', 1.0) if hasattr(self, 'preview_display_widget') else 1.0,
-            'preview_size': self.preview_display_widget.size().toTuple() if hasattr(self, 'preview_display_widget') else (800, 600)
-        }
-
-    def closeEvent(self, event):
-        """窗口关闭事件"""
-        self.shutdown_multiprocess()
-        super().closeEvent(event)
-
-    def get_application_context_legacy(self, node=None):
+    def get_application_context(self, node=None):
         """Gathers relevant application state information for scripts."""
         # --- 直接使用 preview_display_widget ---
         preview_widget_size = QSize(0, 0)
@@ -2629,56 +2406,26 @@ class TunnelNX(QMainWindow):
 
     def update_colorspace_gamma_indicators(self):
         """更新色彩空间和伽马指示器"""
-        print(f"[状态栏] === 更新色彩空间和伽马指示器 ===")
-        print(f"[状态栏] 节点总数: {len(self.nodes)}")
-
         # 查找解码节点获取色彩空间和伽马信息
         colorspace = "--"
         gamma = "--"
-        found_decode_node = False
 
-        for i, node in enumerate(self.nodes):
-            print(f"[状态栏] 节点 {i}: 标题='{node.get('title', 'N/A')}', 有processed_outputs={('processed_outputs' in node)}")
-
+        for node in self.nodes:
             if node.get('title') == '解码节点':
-                found_decode_node = True
-                print(f"[状态栏] 找到解码节点")
-
                 if 'processed_outputs' in node:
-                    print(f"[状态栏] 解码节点有processed_outputs: {list(node['processed_outputs'].keys())}")
-
                     # 检查节点的元数据
                     if '_metadata' in node['processed_outputs']:
                         metadata = node['processed_outputs']['_metadata']
-                        print(f"[状态栏] 解码节点元数据: {metadata}")
                         colorspace = metadata.get('colorspace', '--')
                         gamma = metadata.get('gamma', '--')
-                        print(f"[状态栏] 提取的色彩空间: {colorspace}, 伽马: {gamma}")
                         break
-                    else:
-                        print(f"[状态栏] 解码节点processed_outputs中没有_metadata")
-                else:
-                    print(f"[状态栏] 解码节点没有processed_outputs")
-
-        if not found_decode_node:
-            print(f"[状态栏] 没有找到解码节点")
-
-        print(f"[状态栏] 最终值 - 色彩空间: {colorspace}, 伽马: {gamma}")
 
         # 更新指示器标签
         if hasattr(self, 'colorspace_label'):
             self.colorspace_label.setText(f"色彩空间: {colorspace}")
-            print(f"[状态栏] 更新色彩空间标签: {colorspace}")
-        else:
-            print(f"[状态栏] 警告: 没有colorspace_label属性")
 
         if hasattr(self, 'gamma_label'):
             self.gamma_label.setText(f"伽马: {gamma}")
-            print(f"[状态栏] 更新伽马标签: {gamma}")
-        else:
-            print(f"[状态栏] 警告: 没有gamma_label属性")
-
-        print(f"[状态栏] === 更新完成 ===")
 
     def create_node_graph_area(self):
         """创建节点图区域UI"""
@@ -4979,7 +4726,6 @@ class TunnelNX(QMainWindow):
 
             if preview_node and (node == preview_node or self.is_upstream_of_preview(node)):
                 is_preview_relevant = True
-                print(f"节点 '{node['title']}' 是预览节点的上游，将确保处理完整路径")
 
             # 选择性处理节点图 - 只处理当前节点和下游节点
             # 将suppress_auto_save设为True，抑制即时自动保存
@@ -5093,132 +4839,26 @@ class TunnelNX(QMainWindow):
         return None
     def process_node_graph(self, suppress_auto_save=False, changed_nodes=None):
         """
-        处理节点图 - 使用多进程架构
+        使用更健壮的拓扑排序逻辑处理节点图，并记录处理过的节点ID
 
         参数:
             suppress_auto_save (bool): 是否抑制自动保存
             changed_nodes (list): 需要重新处理的节点列表
                 - 如果为None，则重新处理所有节点
                 - 如果不为None，则只处理指定节点及其下游节点
+
+        注意:
+            当添加新节点时，应该只处理新添加的节点，即使用changed_nodes=[node]
+            仅在完全清空节点图或者加载新节点图时才清空缓存
         """
+        processed_node_ids = set() # 记录在此次运行中处理的节点
+
         if not self.nodes:
             # 如果没有节点，确保清除上次处理记录并返回
             if hasattr(self, 'preview_display_widget'):
                 self.preview_display_widget.processed_in_last_run = set()
-                self.preview_display_widget.update()
+                self.preview_display_widget.update() # 更新一次以清除可能残留的叠加层
             return
-
-        # 检查多进程架构是否可用
-        if not self.multiprocess_enabled or not self.communicator:
-            self.task_label.setText("❌ 多进程架构不可用，无法处理节点图")
-            print("错误：多进程架构不可用，无法处理节点图")
-            return
-
-        # 使用多进程架构处理
-        self._process_node_graph_multiprocess(suppress_auto_save, changed_nodes)
-
-    def _process_node_graph_multiprocess(self, suppress_auto_save=False, changed_nodes=None):
-        """使用多进程架构处理节点图"""
-        try:
-            print("🚀 使用多进程架构处理节点图")
-
-            # 1. 准备节点图数据
-            nodegraph_data = self._prepare_nodegraph_data()
-
-            # 2. 发送解析请求
-            parse_result = self.communicator.send_request(
-                'parser',
-                MessageType.PARSE_NODEGRAPH,
-                {'nodegraph_data': nodegraph_data},
-                timeout=10.0
-            )
-
-            if not parse_result or not parse_result.get('success'):
-                print(f"❌ 节点图解析失败: {parse_result.get('errors', ['Unknown error']) if parse_result else ['No response']}")
-                # 回退到单进程模式
-                self._process_node_graph_singleprocess(suppress_auto_save, changed_nodes)
-                return
-
-            print(f"✅ 节点图解析成功: {len(parse_result['nodes'])} 个节点")
-
-            # 3. 准备执行数据
-            execution_data = {
-                'nodes': parse_result['nodes'],
-                'connections': parse_result['connections'],
-                'execution_order': parse_result['execution_order'],
-                'context': self.get_application_context(),
-                'changed_nodes': [node['id'] for node in changed_nodes] if changed_nodes else None
-            }
-
-            # 4. 发送执行请求
-            execute_result = self.communicator.send_request(
-                'engine',
-                MessageType.EXECUTE_NODEGRAPH,
-                execution_data,
-                timeout=30.0
-            )
-
-            if not execute_result or not execute_result.get('success'):
-                print(f"❌ 节点图执行失败: {execute_result.get('error', 'Unknown error') if execute_result else 'No response'}")
-                # 回退到单进程模式
-                self._process_node_graph_singleprocess(suppress_auto_save, changed_nodes)
-                return
-
-            print(f"✅ 节点图执行成功，用时: {execute_result.get('total_execution_time', 0):.3f}s")
-
-            # 5. 更新节点结果
-            self._update_nodes_with_results(execute_result['results'])
-
-            # 6. 更新预览
-            self.update_preview()
-
-        except Exception as e:
-            print(f"❌ 多进程处理出错: {e}")
-            # 回退到单进程模式
-            self._process_node_graph_singleprocess(suppress_auto_save, changed_nodes)
-
-    def _prepare_nodegraph_data(self):
-        """准备节点图数据用于多进程处理"""
-        return {
-            'nodes': [
-                {
-                    'id': node['id'],
-                    'title': node['title'],
-                    'script_path': node.get('script_path', ''),
-                    'params': node.get('params', {}),
-                    'x': node.get('x', 0),
-                    'y': node.get('y', 0)
-                }
-                for node in self.nodes
-            ],
-            'connections': [
-                {
-                    'output_node_id': conn['output_node']['id'],
-                    'output_port_idx': conn['output_port_idx'],
-                    'input_node_id': conn['input_node']['id'],
-                    'input_port_idx': conn['input_port_idx']
-                }
-                for conn in self.connections
-            ]
-        }
-
-    def _update_nodes_with_results(self, results):
-        """用执行结果更新节点"""
-        for node in self.nodes:
-            node_id = node['id']
-            if node_id in results:
-                result = results[node_id]
-                if result.get('success'):
-                    node['processed_outputs'] = result.get('outputs', {})
-                else:
-                    print(f"节点 {node['title']} 执行失败: {result.get('error', 'Unknown error')}")
-                    node['processed_outputs'] = {}
-
-    def _process_node_graph_singleprocess(self, suppress_auto_save=False, changed_nodes=None):
-        """
-        单进程模式处理节点图（原有逻辑）
-        """
-        processed_node_ids = set() # 记录在此次运行中处理的节点
 
         # --- 1. 初始化处理状态 ---
         # processing_state: node_id -> {'node': node_obj, 'inputs_needed': set(indices), 'inputs_received': set(indices), 'status': 'pending/ready/processing/done/error'}
@@ -5326,7 +4966,6 @@ class TunnelNX(QMainWindow):
                 continue
 
             current_node = state['node']
-            print(f"Processing node: {current_node['title']}") # DEBUG
             state['status'] = 'processing'
             # 记录节点处理开始时间
             node_start_time = time.time()
@@ -5363,14 +5002,6 @@ class TunnelNX(QMainWindow):
 
         end_time = time.time()
         processing_time = end_time - start_time
-        print(f"Node graph processing ({'Full' if changed_nodes is None else f'Selective ({len(nodes_to_process_ids)} nodes)'}) took: {processing_time:.3f}s, Processed in run: {processed_count} nodes.")
-        if error_occurred:
-             print("Errors occurred during processing.")
-        print(f"DEBUG: Nodes processed in this run: {processed_node_ids}") # DEBUG
-        # 输出每个节点的处理时间
-        print("节点处理详细用时:")
-        for node_title, node_time in node_times.items():
-            print(f"  - {node_title}: {node_time:.3f}s")
         # --- 4. 更新UI和状态 ---
         # 将本次运行处理的节点ID集合传递给预览部件
         if hasattr(self, 'preview_display_widget'):
@@ -5415,8 +5046,6 @@ class TunnelNX(QMainWindow):
 
         # 批量处理需要更新的节点
         if nodes_to_update:
-            print(f"PreviewOnNode优化: 需要更新 {len(nodes_to_update)} 个节点（共 {preview_nodes_count} 个支持预览）")
-
             rebuild_count = 0
             update_count = 0
 
@@ -5430,15 +5059,12 @@ class TunnelNX(QMainWindow):
                     self._update_node_preview_image(node)
                     update_count += 1
 
-            print(f"PreviewOnNode优化完成: 重建 {rebuild_count} 个，更新预览 {update_count} 个")
-
             # 减少UI更新频率 - 只在最后统一更新
             if rebuild_count > 0:
                 self.node_canvas_widget.update()
 
         preview_end_time = time.time()
         preview_time = preview_end_time - preview_start_time
-        print(f"预览更新用时: {preview_time:.3f}s")
 
         # 更新色彩空间和伽马指示器
         self.update_colorspace_gamma_indicators()
@@ -6164,7 +5790,6 @@ class TunnelNX(QMainWindow):
         """
         # 如果需要强制刷新
         if force_refresh:
-            print("强制刷新预览，重新处理所有节点...")
             try:
                 # 设置标志
                 self._force_reprocess_all = True
@@ -6181,7 +5806,6 @@ class TunnelNX(QMainWindow):
 
                 # 如果找到预览节点，确保更新显示
                 if preview_node:
-                    print("强制更新预览节点显示...")
                     # 先清空处理缓存
                     if 'processed_outputs' in preview_node:
                         del preview_node['processed_outputs']

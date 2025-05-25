@@ -63,47 +63,31 @@ def extract_image_metadata(image_path):
 
 
 def process(inputs, params):
-    print(f"[解码节点] === 开始处理 ===")
-    print(f"[解码节点] 输入键: {list(inputs.keys())}")
-    print(f"[解码节点] 参数: {params}")
-
     if 'img' not in inputs:
-        print(f"[解码节点] 错误: 没有找到 'img' 输入")
         return {'f32bmp': None}
 
     img = inputs['img']
     if img is None:
-        print(f"[解码节点] 错误: 图像数据为 None")
         return {'f32bmp': None}
-
-    print(f"[解码节点] 图像形状: {img.shape if hasattr(img, 'shape') else 'N/A'}")
-    print(f"[解码节点] 图像类型: {type(img)}")
 
     # 获取输入元数据
     input_metadata = inputs.get('_metadata', {})
-    print(f"[解码节点] 输入元数据: {input_metadata}")
 
     # 获取图像路径（如果有的话）
     image_path = input_metadata.get('image_path', '')
-    print(f"[解码节点] 图像路径: '{image_path}'")
 
     # 提取或使用用户设置的色彩空间和伽马
     detected_colorspace, detected_gamma = extract_image_metadata(image_path)
-    print(f"[解码节点] 检测结果 - 色彩空间: {detected_colorspace}, 伽马: {detected_gamma}")
 
     # 获取用户设置的色彩空间和伽马，如果为空则使用检测到的值
     user_colorspace = params.get('colorspace_override', '').strip()
     user_gamma = params.get('gamma_override', '').strip()
-    print(f"[解码节点] 用户重载 - 色彩空间: '{user_colorspace}', 伽马: '{user_gamma}'")
 
     final_colorspace = user_colorspace if user_colorspace else detected_colorspace
     try:
         final_gamma = float(user_gamma) if user_gamma else detected_gamma
     except ValueError:
         final_gamma = detected_gamma
-        print(f"[解码节点] 警告: 伽马值转换失败，使用检测值: {detected_gamma}")
-
-    print(f"[解码节点] 最终使用 - 色彩空间: {final_colorspace}, 伽马: {final_gamma}")
 
     # 处理Alpha通道
     if len(img.shape) == 3 and img.shape[2] == 4:
@@ -200,10 +184,6 @@ def process(inputs, params):
             'height': height
         })
 
-        print(f"[解码节点] 输出元数据: {output_metadata}")
-        print(f"[解码节点] 输出图像形状: {rgba_image.shape}")
-        print(f"[解码节点] === 处理完成 ===")
-
         return {'f32bmp': rgba_image, '_metadata': output_metadata}
     else:
         # 如果没有Alpha通道，创建RGBA格式的f32bmp，Alpha通道设为1.0（完全不透明）
@@ -225,10 +205,6 @@ def process(inputs, params):
             'width': width,
             'height': height
         })
-
-        print(f"[解码节点] 输出元数据: {output_metadata}")
-        print(f"[解码节点] 输出图像形状: {rgba_image.shape}")
-        print(f"[解码节点] === 处理完成 ===")
 
         return {'f32bmp': rgba_image, '_metadata': output_metadata}
 
