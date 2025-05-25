@@ -28,11 +28,129 @@ from PySide6.QtCore import QBuffer, QByteArray, QIODevice
 import configparser
 import importlib.util
 import datetime
+import copy
+import threading
 # 动态导入TNXVC模块
 try:
     from TunnelNX_scripts.TNXVC import TNXVC
 except ImportError:
     print("TNXVC模块未找到，版本控制功能可能不可用")
+
+
+class MetadataManager:
+    """元数据管理器 - 负责处理节点图中的元数据流"""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+
+    def create_metadata(self, **kwargs):
+        """创建新的元数据字典"""
+        with self._lock:
+            metadata = {
+                'created_at': datetime.datetime.now().isoformat(),
+                'node_path': [],  # 记录经过的节点路径
+                'processing_history': [],  # 记录处理历史
+                **kwargs
+            }
+            return metadata
+
+    def merge_metadata(self, *metadata_dicts):
+        """合并多个元数据字典，后面的会覆盖前面的同名键"""
+        with self._lock:
+            merged = {}
+            for metadata in metadata_dicts:
+                if isinstance(metadata, dict):
+                    merged.update(metadata)
+            return merged
+
+    def copy_metadata(self, metadata):
+        """深拷贝元数据"""
+        if not isinstance(metadata, dict):
+            return {}
+        return copy.deepcopy(metadata)
+
+    def add_node_to_path(self, metadata, node_id, node_title):
+        """向元数据的节点路径中添加节点"""
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        if 'node_path' not in metadata:
+            metadata['node_path'] = []
+
+        metadata['node_path'].append({
+            'node_id': node_id,
+            'node_title': node_title,
+            'processed_at': datetime.datetime.now().isoformat()
+        })
+        return metadata
+
+    def add_processing_record(self, metadata, operation, details=None):
+        """向元数据中添加处理记录"""
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        if 'processing_history' not in metadata:
+            metadata['processing_history'] = []
+
+        record = {
+            'operation': operation,
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+        if details:
+            record['details'] = details
+
+        metadata['processing_history'].append(record)
+        return metadata
+
+    def get_metadata_value(self, metadata, key, default=None):
+        """安全地获取元数据值"""
+        if not isinstance(metadata, dict):
+            return default
+        return metadata.get(key, default)
+
+    def set_metadata_value(self, metadata, key, value):
+        """设置元数据值"""
+        if not isinstance(metadata, dict):
+            metadata = {}
+        metadata[key] = value
+        return metadata
+
+    def delete_metadata_key(self, metadata, key):
+        """删除元数据键"""
+        if isinstance(metadata, dict) and key in metadata:
+            del metadata[key]
+        return metadata
+
+    def validate_metadata(self, metadata):
+        """验证元数据格式"""
+        if not isinstance(metadata, dict):
+            return False
+
+        # 检查必要的字段
+        required_fields = ['created_at', 'node_path', 'processing_history']
+        for field in required_fields:
+            if field not in metadata:
+                return False
+
+        return True
+
+    def serialize_metadata(self, metadata):
+        """序列化元数据为JSON字符串"""
+        try:
+            import json
+            return json.dumps(metadata, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"元数据序列化失败: {e}")
+            return "{}"
+
+    def deserialize_metadata(self, metadata_str):
+        """从JSON字符串反序列化元数据"""
+        try:
+            import json
+            return json.loads(metadata_str)
+        except Exception as e:
+            print(f"元数据反序列化失败: {e}")
+            return {}
 
 def scale_tile_worker(tile_byte_array, target_width, target_height, transformation_mode_value, aspect_ratio_mode_value):
     """
@@ -97,6 +215,9 @@ class TunnelNX(QMainWindow):
         self.version = "Alpha 2"
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.node_cache = LRUCache(max_size=200)
+
+        # 初始化元数据管理器
+        self.metadata_manager = MetadataManager()
 
         # 首先，确保 self.script_dir 已定义
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -2218,28 +2339,92 @@ class TunnelNX(QMainWindow):
         # ----------------------
         status_layout = QHBoxLayout(self.preview_status_bar)
         status_layout.setContentsMargins(5, 0, 5, 0)
+        status_layout.setSpacing(0)  # 移除控件之间的间距
 
         # 创建状态栏标签
         self.pixel_info_label = QLabel("坐标: -- , --  RGB: --, --, --")
-        self.pixel_info_label.setObjectName("pixel_info_label")  # 添加这行
-
-        self.image_size_label = QLabel("尺寸: -- x --")
-        self.image_size_label.setObjectName("image_size_label")  # 添加这行
+        self.pixel_info_label.setObjectName("pixel_info_label")
         self.pixel_info_label.setMinimumWidth(235) # 为像素信息标签设置最小宽度，防止抖动
         status_layout.addWidget(self.pixel_info_label)
 
-        # 添加任务状态标签
-        self.task_label = QLabel("") # 初始化为空
-        status_layout.addWidget(self.task_label)
+        # 添加色彩空间和伽马指示器（紧贴像素信息标签，无间隙）
+        self.colorspace_label = QLabel("色彩空间: --")
+        self.colorspace_label.setObjectName("colorspace_label")
+        status_layout.addWidget(self.colorspace_label)
+
+        self.gamma_label = QLabel("伽马: --")
+        self.gamma_label.setObjectName("gamma_label")
+        status_layout.addWidget(self.gamma_label)
+
+        # 添加任务状态标签（放在弹性空间之后，避免影响左侧布局）
+        # 暂时移除，稍后在弹性空间后添加
 
         # 添加弹性伸缩项，将右侧标签推到右边
         status_layout.addStretch(1)
 
+        # 添加任务状态标签（在弹性空间之后，不影响左侧布局）
+        self.task_label = QLabel("") # 初始化为空
+        status_layout.addWidget(self.task_label)
+
+        # 图像尺寸标签（右侧）
         self.image_size_label = QLabel("尺寸: -- x --")
-        # status_layout.addWidget(self.image_size_label, 0, Qt.AlignRight) # 不再需要 AlignRight
+        self.image_size_label.setObjectName("image_size_label")
         status_layout.addWidget(self.image_size_label)
 
         preview_layout.addWidget(self.preview_status_bar)
+
+    def update_colorspace_gamma_indicators(self):
+        """更新色彩空间和伽马指示器"""
+        print(f"[状态栏] === 更新色彩空间和伽马指示器 ===")
+        print(f"[状态栏] 节点总数: {len(self.nodes)}")
+
+        # 查找解码节点获取色彩空间和伽马信息
+        colorspace = "--"
+        gamma = "--"
+        found_decode_node = False
+
+        for i, node in enumerate(self.nodes):
+            print(f"[状态栏] 节点 {i}: 标题='{node.get('title', 'N/A')}', 有processed_outputs={('processed_outputs' in node)}")
+
+            if node.get('title') == '解码节点':
+                found_decode_node = True
+                print(f"[状态栏] 找到解码节点")
+
+                if 'processed_outputs' in node:
+                    print(f"[状态栏] 解码节点有processed_outputs: {list(node['processed_outputs'].keys())}")
+
+                    # 检查节点的元数据
+                    if '_metadata' in node['processed_outputs']:
+                        metadata = node['processed_outputs']['_metadata']
+                        print(f"[状态栏] 解码节点元数据: {metadata}")
+                        colorspace = metadata.get('colorspace', '--')
+                        gamma = metadata.get('gamma', '--')
+                        print(f"[状态栏] 提取的色彩空间: {colorspace}, 伽马: {gamma}")
+                        break
+                    else:
+                        print(f"[状态栏] 解码节点processed_outputs中没有_metadata")
+                else:
+                    print(f"[状态栏] 解码节点没有processed_outputs")
+
+        if not found_decode_node:
+            print(f"[状态栏] 没有找到解码节点")
+
+        print(f"[状态栏] 最终值 - 色彩空间: {colorspace}, 伽马: {gamma}")
+
+        # 更新指示器标签
+        if hasattr(self, 'colorspace_label'):
+            self.colorspace_label.setText(f"色彩空间: {colorspace}")
+            print(f"[状态栏] 更新色彩空间标签: {colorspace}")
+        else:
+            print(f"[状态栏] 警告: 没有colorspace_label属性")
+
+        if hasattr(self, 'gamma_label'):
+            self.gamma_label.setText(f"伽马: {gamma}")
+            print(f"[状态栏] 更新伽马标签: {gamma}")
+        else:
+            print(f"[状态栏] 警告: 没有gamma_label属性")
+
+        print(f"[状态栏] === 更新完成 ===")
 
     def create_node_graph_area(self):
         """创建节点图区域UI"""
@@ -2736,7 +2921,13 @@ class TunnelNX(QMainWindow):
             'port_counts': {
                 'inputs': len(script_info.get('inputs', [])),
                 'outputs': len(script_info.get('outputs', []))
-            }
+            },
+            # 新增：元数据支持
+            'metadata': self.metadata_manager.create_metadata(
+                node_id=self.next_node_id,
+                node_title=os.path.splitext(os.path.basename(script_path))[0],
+                script_path=script_path
+            )
         }
 
         # 加载模块并获取默认参数
@@ -4900,6 +5091,9 @@ class TunnelNX(QMainWindow):
         preview_time = preview_end_time - preview_start_time
         print(f"预览更新用时: {preview_time:.3f}s")
 
+        # 更新色彩空间和伽马指示器
+        self.update_colorspace_gamma_indicators()
+
         # 注: 此处原来的自动保存代码已移除
     def _get_node_cache_key(self, node):
         """
@@ -4980,8 +5174,11 @@ class TunnelNX(QMainWindow):
         # 初始化输出
         outputs = {}
         try:
-            # 获取节点输入
+            # 获取节点输入（包含元数据）
             inputs = self.get_node_inputs(node)
+
+            # 提取元数据
+            input_metadata = inputs.pop('_metadata', {})
 
             # 获取节点参数
             params = {}
@@ -5220,6 +5417,36 @@ class TunnelNX(QMainWindow):
         # 保存处理结果到节点
         node['processed_outputs'] = outputs
 
+        # 更新节点元数据
+        if 'metadata' not in node:
+            node['metadata'] = self.metadata_manager.create_metadata(
+                node_id=node.get('id'),
+                node_title=node.get('title', '未知'),
+                script_path=node.get('script_path', '')
+            )
+
+        # 合并输入元数据到当前节点元数据
+        if input_metadata:
+            node['metadata'] = self.metadata_manager.merge_metadata(node['metadata'], input_metadata)
+
+        # 添加当前节点到处理路径
+        node['metadata'] = self.metadata_manager.add_node_to_path(
+            node['metadata'],
+            node.get('id'),
+            node.get('title', '未知')
+        )
+
+        # 记录处理操作
+        node['metadata'] = self.metadata_manager.add_processing_record(
+            node['metadata'],
+            'process_node',
+            {
+                'script_type': node.get('script_type', 'legacy'),
+                'script_path': node.get('script_path', ''),
+                'output_types': list(outputs.keys()) if outputs else []
+            }
+        )
+
         # 如果有支持自定义预览更新的函数，则触发它
         # 例如让节点自己处理预览窗口的更新，而不是由主程序统一更新
         node_id = node.get('id')
@@ -5370,6 +5597,20 @@ class TunnelNX(QMainWindow):
                     else:
                         # 对于额外的同类型输入，添加序号
                         inputs[f"{input_type}_{count - 1}"] = output_data[output_type]
+
+        # 收集所有上游节点的元数据
+        accumulated_metadata = {}
+        for conn in input_connections:
+            output_node = conn['output_node']
+            if 'metadata' in output_node:
+                upstream_metadata = self.metadata_manager.copy_metadata(output_node['metadata'])
+                accumulated_metadata = self.metadata_manager.merge_metadata(
+                    accumulated_metadata, upstream_metadata
+                )
+
+        # 将累积的元数据添加到输入中
+        if accumulated_metadata:
+            inputs['_metadata'] = accumulated_metadata
 
         return inputs
 
@@ -6318,7 +6559,9 @@ class TunnelNX(QMainWindow):
                     # 保存灵活端口信息
                     'flexible_ports': node.get('flexible_ports', {'inputs': [], 'outputs': []}),
                     # 保存端口计数
-                    'port_counts': node.get('port_counts', {'inputs': 0, 'outputs': 0})
+                    'port_counts': node.get('port_counts', {'inputs': 0, 'outputs': 0}),
+                    # 保存元数据
+                    'metadata': node.get('metadata', {})
                 }
                 data['nodes'].append(node_data)
 
@@ -6533,6 +6776,17 @@ class TunnelNX(QMainWindow):
                     # 恢复端口计数
                     if 'port_counts' in node_data:
                         node['port_counts'] = node_data['port_counts']
+
+                    # 恢复元数据
+                    if 'metadata' in node_data:
+                        node['metadata'] = node_data['metadata']
+                    else:
+                        # 如果没有元数据，创建默认元数据
+                        node['metadata'] = self.metadata_manager.create_metadata(
+                            node_id=node['id'],
+                            node_title=node['title'],
+                            script_path=node['script_path']
+                        )
 
                     # 重建灵活端口视觉组件 - 确保与端口计数一致
                     if 'port_counts' in node and 'flexible_ports' in node:
