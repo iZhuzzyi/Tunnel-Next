@@ -10,6 +10,9 @@ def process(inputs, params):
     Legacy 脚本接口：接收 inputs(dict)、params(dict)，返回 outputs(dict)。
     将四路输入图像分别映射到 R/G/B/A 通道，输出一张 4 通道浮点图像。
     """
+    # 获取输入元数据
+    input_metadata = inputs.get('_metadata', {})
+
     # 1. 获取并检查输入
     im_r = inputs.get('channelR')
     im_g = inputs.get('channelG')
@@ -45,5 +48,18 @@ def process(inputs, params):
     out[..., 2] = extract_channel(im_b)  # B
     out[..., 3] = extract_channel(im_a)  # A
 
+    # 创建输出元数据
+    output_metadata = input_metadata.copy() if input_metadata else {}
+    output_metadata.update({
+        'channels': 4,
+        'format': 'RGBA',
+        'width': w,
+        'height': h,
+        'operation': 'channel_composition'
+    })
+
     # 3. 返回输出，键名必须与头部第2行一致
-    return {'f32bmp': out}
+    return {
+        'f32bmp': out,
+        '_metadata': output_metadata
+    }

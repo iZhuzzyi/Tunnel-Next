@@ -10,6 +10,9 @@ def process(inputs, params):
     Legacy 脚本接口：接收 inputs(dict)、params(dict)，返回 outputs(dict)。
     本节点对输入图像的前四个通道分别生成灰度化输出，并将其复制到 RGB 三通道。
     """
+    # 获取输入元数据
+    input_metadata = inputs.get('_metadata', {})
+
     # 1. 获取并检查输入
     img = inputs.get('f32bmp')
     if img is None:
@@ -37,13 +40,27 @@ def process(inputs, params):
             out[..., 3] = 1.0      # Alpha 恒为 1.0
 
             # 这里的 key 必须和头部第2行注释一一对应
-            key = 'f32bmp' if i == 0 else f'f32bmp_{i}'
+            channel_names = ['channelR', 'channelG', 'channelB', 'channelA']
+            key = channel_names[i]
             outputs[key] = out
 
     except Exception as e:
         print(f"Error during channel separation: {e}")
         import traceback; traceback.print_exc()
         return {}
+
+    # 创建输出元数据
+    output_metadata = input_metadata.copy() if input_metadata else {}
+    output_metadata.update({
+        'channels': 4,
+        'format': 'separated_channels',
+        'width': w,
+        'height': h,
+        'operation': 'channel_separation'
+    })
+
+    # 为所有输出添加元数据
+    outputs['_metadata'] = output_metadata
 
     # 3. 返回所有输出
     return outputs

@@ -3727,6 +3727,10 @@ class TunnelNX(QMainWindow):
             # 否则，使用默认的标准预览窗口逻辑
             open_win_action.triggered.connect(lambda: self.show_node_preview_window(node))
 
+        # --- 元数据查看选项 ---
+        metadata_action = menu.addAction("元数据查看")
+        metadata_action.triggered.connect(lambda: self.show_node_metadata_dialog(node))
+
         # --- （菜单显示逻辑不变） ---
         # 在节点 widget 全局坐标处显示菜单
         menu.exec_(node['widget'].mapToGlobal(pos))
@@ -3896,6 +3900,73 @@ class TunnelNX(QMainWindow):
              self.node_preview_windows.pop(node_id, None)
         else:
             print(f"Warning: Node ID {node_id} not found in preview window dictionary during cleanup.")
+
+    def show_node_metadata_dialog(self, node):
+        """显示节点元数据查看对话框"""
+        from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTextEdit,
+                                       QPushButton, QLabel, QDialogButtonBox, QApplication)
+        from PySide6.QtCore import Qt
+        import json
+        import datetime
+
+        # 创建对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"元数据查看 - {node.get('title', '未知节点')} (ID: {node.get('id', 'N/A')})")
+        dialog.setModal(True)
+        dialog.resize(600, 500)
+
+        # 主布局
+        layout = QVBoxLayout(dialog)
+
+        # 标题标签
+        title_label = QLabel(f"节点: {node.get('title', '未知节点')}")
+        title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
+        layout.addWidget(title_label)
+
+        # 获取节点元数据
+        node_metadata = node.get('metadata', {})
+
+        # 如果节点有处理输出，也获取输出中的元数据
+        output_metadata = {}
+        if 'processed_outputs' in node and '_metadata' in node['processed_outputs']:
+            output_metadata = node['processed_outputs']['_metadata']
+
+        # 合并元数据（输出元数据优先）
+        combined_metadata = self.metadata_manager.merge_metadata(node_metadata, output_metadata)
+
+        # 格式化元数据文本
+        metadata_text = self._format_metadata_for_display(combined_metadata)
+
+        # 文本显示区域
+        text_edit = QTextEdit()
+        text_edit.setPlainText(metadata_text)
+        text_edit.setReadOnly(True)
+        text_edit.setFont(QApplication.font())  # 使用系统默认字体
+        layout.addWidget(text_edit)
+
+        # 按钮区域
+        button_layout = QHBoxLayout()
+
+        # 复制到剪贴板按钮
+        copy_button = QPushButton("复制到剪贴板")
+        copy_button.clicked.connect(lambda: self._copy_metadata_to_clipboard(metadata_text))
+        button_layout.addWidget(copy_button)
+
+        # 导出到文件按钮
+        export_button = QPushButton("导出到文件")
+        export_button.clicked.connect(lambda: self._export_metadata_to_file(combined_metadata, node))
+        button_layout.addWidget(export_button)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # 对话框按钮
+        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        # 显示对话框
+        dialog.exec_()
 
     def stop_connection_drag(self):
         """辅助函数：清理连接拖拽状态、过滤器和鼠标抓取"""
@@ -5530,9 +5601,6 @@ class TunnelNX(QMainWindow):
         if not isinstance(outputs, dict):
             outputs = {}
 
-        # 保存处理结果到节点
-        node['processed_outputs'] = outputs
-
         # 更新节点元数据
         if 'metadata' not in node:
             node['metadata'] = self.metadata_manager.create_metadata(
@@ -5562,6 +5630,27 @@ class TunnelNX(QMainWindow):
                 'output_types': list(outputs.keys()) if outputs else []
             }
         )
+
+        # 为每个输出添加元数据（如果脚本没有返回_metadata）
+        enhanced_outputs = {}
+        for output_key, output_value in outputs.items():
+            if output_key == '_metadata':
+                # 如果脚本返回了_metadata，跳过处理
+                continue
+            enhanced_outputs[output_key] = output_value
+
+        # 如果脚本没有返回_metadata，为所有输出添加当前节点的元数据
+        if '_metadata' not in outputs and enhanced_outputs:
+            enhanced_outputs['_metadata'] = self.metadata_manager.copy_metadata(node['metadata'])
+        elif '_metadata' in outputs:
+            # 如果脚本返回了_metadata，合并到节点元数据中
+            script_metadata = outputs['_metadata']
+            if isinstance(script_metadata, dict):
+                node['metadata'] = self.metadata_manager.merge_metadata(node['metadata'], script_metadata)
+            enhanced_outputs['_metadata'] = self.metadata_manager.copy_metadata(node['metadata'])
+
+        # 保存处理结果到节点
+        node['processed_outputs'] = enhanced_outputs
 
         # 如果有支持自定义预览更新的函数，则触发它
         # 例如让节点自己处理预览窗口的更新，而不是由主程序统一更新
