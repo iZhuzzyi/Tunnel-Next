@@ -5409,9 +5409,7 @@ class TunnelNX(QMainWindow):
             print(f"删除节点 '{target_node['title']}' 影响了 {len(affected_nodes)} 个节点，只处理这些节点")
             self.process_node_graph(changed_nodes=affected_nodes)
         else:
-            print(f"删除节点 '{target_node['title']}' 没有影响其他节点，无需重新处理")
-            # 只需要更新预览即可
-            self.update_preview()
+            print(f"删除节点 '{target_node['title']}' 是孤立节点，无需重新处理或刷新预览")
 
         # 更新画布
         self.node_canvas_widget.update()
